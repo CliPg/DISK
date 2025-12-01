@@ -1,0 +1,8 @@
+pdfplumber
+fitz
+pillow
+pandas
+pytesseract
+paddleocr
+pymupdf
+paddle
