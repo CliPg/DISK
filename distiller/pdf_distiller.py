@@ -13,7 +13,7 @@ class PDFDistiller:
     def __init__(self):
         self.ocr_model = PaddleOCR(use_angle_cls=True, lang='en')
 
-    def extract_text_blocks(self, pdf_path):
+    def extract_text_blocks(self, pdf_path:str)->list:
         """
         extract blocks per page from pdf.
         one block usually corresponds to one paragraph.

@@ -5,3 +5,5 @@ pytesseract
 paddleocr
 pymupdf
 paddlepaddle
+langchain-community
+dashscope
