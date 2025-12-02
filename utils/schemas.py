@@ -6,7 +6,7 @@ class Entitiy(BaseModel):
     label: str
     name: str
 
-class Relationship(BaseModel):
+class Relation(BaseModel):
     start_entity: Entitiy
     end_entity: Entitiy
     label: str
@@ -15,5 +15,5 @@ class Relationship(BaseModel):
 class Entities(BaseModel):
     entities: list[Entitiy]
 
-class Relationships(BaseModel):
-    relationships: list[Relationship]
+class Relations(BaseModel):
+    relations: list[Relation]

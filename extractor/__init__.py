@@ -1,2 +1,4 @@
 from .entities_extractor import EntitiesExtractor
-__all__ = ["EntitiesExtractor"]
+from .relations_extractor import RelationsExtractor
+__all__ = ["EntitiesExtractor",
+           "RelationsExtractor"]

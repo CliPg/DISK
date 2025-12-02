@@ -11,15 +11,15 @@ class Entity():
         self.embedding = embedding
 
 
-class Relationship():
+class Relation():
     def __init__(self, start_entity:Entity, end_entity:Entity, label:str, name:str, embedding):
         """
         Args:
-            start_entity (Entity): the starting entity of the relationship
-            end_entity (Entity): the ending entity of the relationship
-            label (str): type of the relationship
-            name (str): relationship name
-            embedding: relationship embedding vector
+            start_entity (Entity): the starting entity of the relation
+            end_entity (Entity): the ending entity of the relation
+            label (str): type of the relation
+            name (str): relation name
+            embedding: relation embedding vector
         """
         self.start_entity = start_entity
         self.end_entity = end_entity
@@ -31,10 +31,10 @@ class Relationship():
 class KnowledgeGraph:
     def __init__(self):
         self.entities = []
-        self.relationships = []
+        self.relations = []
 
     def add_entity(self, entity:Entity):
         self.entities.append(entity)
 
-    def add_relationship(self, relationship:Relationship):
-        self.relationships.append(relationship)
+    def add_relation(self, relation:Relation):
+        self.relations.append(relation)
