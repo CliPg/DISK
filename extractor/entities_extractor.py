@@ -8,7 +8,7 @@ class EntitiesExtractor:
     def __init__(self, llm, embeddings):
         self.parser = Parser(llm=llm, embeddings=embeddings)
 
-    def extract_entities(self, text:str) -> list[Entity]:
+    def extract_entities(self, text:str) -> list[Entity] | None:
         """
         Extract entities from the given text.
 
@@ -24,12 +24,15 @@ class EntitiesExtractor:
             prompt=EXTRACT_ENTITIES_PROMPT
         )
 
+        if len(entities["entities"]) == 0:
+            print("No entities found in the text.")
+            return None
+
         embedded_entities = self.embed_entities(entities)
 
         with open("entities_output.json", "w") as f:
             f.write(str(entities))
 
-        print(embedded_entities[0].embedding)
         return embedded_entities
     
     def embed_entities(self, entities:EntitiesSchema) -> list[Entity]:
@@ -45,7 +48,7 @@ class EntitiesExtractor:
         """
         embedded_entities = []
 
-        for entity in entities["entities"]:
+        for entity in tqdm(entities["entities"]):
             embedding = self.parser.embeddings.embed_query(entity["name"])
             embedded_entity = Entity(
                 label=entity["label"],
