@@ -31,3 +31,12 @@ touch config.py
 # current default llm is Qwen, 
 # you can switch to other model in config/llm.py
 ```
+
+
+## Contrast
+
+### merge
+- itext2kg
+```
+[INFO] Wohoo! Entity was matched --- [poor deep semantic understanding in traditional ie models:Limitation] --merged--> [cosine similarity ignores deep semantic differences:Limitation]
+```

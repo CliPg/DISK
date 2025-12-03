@@ -29,9 +29,10 @@ class Relation():
 
 
 class KnowledgeGraph:
-    def __init__(self):
-        self.entities = []
-        self.relations = []
+
+    def __init__(self, entities:list[Entity]=None, relations:list[Relation]=None):
+        self.entities = entities
+        self.relations = relations
 
     def add_entity(self, entity:Entity):
         self.entities.append(entity)

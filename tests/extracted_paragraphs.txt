@@ -10,8 +10,6 @@ The Hong Kong University of Science and Technology
 liyichencly@gmail.com, yings@hkust-gz.edu.cn, xionghui@ust.hk,
 {panrong.tpr, zhongming.jinzm, yejieping.ye}@alibaba-inc.com
 
-Abstract
-
 Large Language Models (LLMs) have shown remarkable reasoning capabilities
 on complex tasks, but they still suffer from out-of-date knowledge, hallucinations,
 and opaque decision-making. In contrast, Knowledge Graphs (KGs) can provide
@@ -29,9 +27,6 @@ Specifically, three important mechanisms of Guidance, Memory, and Reflection
 are designed to work together, to guarantee the adaptive breadth of self-correcting
 planning for graph reasoning. Finally, extensive experiments on three real-world
 datasets demonstrate the effectiveness and efficiency of PoG.
-
-1
-Introduction
 
 Large Language Models (LLMs) have manifested outstanding performance in various natural
 language processing and data science tasks, such as question answering [42, 25, 62], text gen-
@@ -55,8 +50,6 @@ structured knowledge in KGs into LLMs’ parameters in a black-box fashion and s
 
 arXiv:2410.23875v1  [cs.AI]  31 Oct 2024
 
-Taylor Swift
-
 Relevant Triplets: No information related to the “American Music 
 Awards”. Therefore, there are no relevant triplets.
 Enough Information: No.
@@ -66,22 +59,6 @@ without using information from knowledge graphs.
 Question: Which of Taylor Swift’s songs has won American Music Awards (AMA)?
 Answer: Blank Space.
 
-Album
-
-Song
-
-Song
-
-Song
-
-America
-
-Song
-
-…
-
-LLM Reasoning
-
 KG Retrieving
 KG Retrieving
 ①
@@ -89,147 +66,38 @@ KG Retrieving
 LLM Reasoning
 ②
 
-③
+Born in
+The Joker And
 
-④
-
-Blank Space
-
-Speak Now
-
-Nationality
-
-Reading
+Shake It Off
 
 Born in
 The Joker And
 
-The Queen
-
 Shake It Off
-
-Relevant
-
-、
-
-Album
-
-Song
-
-Song
-
-Song
-
-America
-
-Song
-
-…
-
-Speak Now
-
-Nationality
-
-Reading
-
-Born in
-The Joker And
-
-The Queen
-
-Shake It Off
-
-Cruel Summer
-
-Irrelevant
-
-Blank Space
-
-Song
-
-…
-
-Song
-
-…
-
-Taylor Swift
 
 The Joker And
 
-The Queen
-
 Shake It Off
-
-Cruel Summer
-
-Ed Sheeran
-
-Award
-
-Composer
 
 2022-02-11
 Release Date
 
-Cruel Summer
-
-MTV VMA
-
 Lover
 in Album
-
-BRIT Award
-
-Award
-
-…
-
-…
-
-…
 
 The Joker And
 
-The Queen
-
 Shake It Off
-
-Cruel Summer
-
-Ed Sheeran
-
-Award
-
-Composer
-
-2022-02-11
-
-Release Date
-
-MTV VMA
 
 Lover
 in Album
-
-BRIT Award
-
-Award
-
-…
-
-…
-
-…
 
 Relevant Triplets: Select most relevant triplets (Breadth ≤ 3), because 
 “The Joker And The Queen”, “Shake It Off”, and “Cruel Summer” are 
 songs of Taylor. 
 Enough Information: No.
 Next Action: Continue retrieving connected entities for relevant triplets.
-
-Relevant
-Irrelevant
 
 Figure 1: A toy example of existing KG-augmented LLM paradigm.
 
@@ -269,8 +137,6 @@ augmented LLM named Plan-on-Graph (PoG). To the best of our knowledge, we are th
 a reflection mechanism for self-correction and adaptive KG exploration into KG-augmented LLMs,
 effectively improving the ability and efficiency of LLM reasoning. Specifically, PoG first decomposes
 
-2
-
 the question into several sub-objectives as guidance for planning exploration, and then repeats the
 process of adaptively exploring reasoning paths to access relevant KG data, updating memory to
 provide dynamic evidence for reflection, and reflecting on the need to self-correct reasoning paths
@@ -306,9 +172,6 @@ to backtrack to for initiating new exploration.
 bQSP, and GrailQA. The results demonstrate not only the effectiveness but also the efficiency
 of our proposed novel PoG paradigm for KG-augmented LLM.
 
-2
-Preliminary
-
 Knowledge Graph (KG) stores massive factual knowledge in the form of a set of triplets: G =
 {(e, r, e′) | e, e′ ∈E, r ∈R}, where E and R denote the set of entities and relations, respectively.
 
@@ -324,9 +187,6 @@ Tq mentioned in q, the target of KGQA is to generate answers Aq to the question 
 previous studies [35], we assume any entity eq ∈Tq mentioned in q and answers aq ∈Aq are labeled
 and linked to the corresponding entities in G, i.e., Tq, Aq ⊆E.
 
-3
-Methodology
-
 In this section, we introduce the technical details of the novel self-correcting adaptive planning
 paradigm for KG-augmented LLM named Plan-on-Graph (PoG). As illustrated in Figure 2, PoG
 consists of four key components: Task Decomposition, Path Exploration, Memory Updating, and
@@ -335,255 +195,55 @@ exploration and then repeats the process of adaptively exploring reasoning paths
 KG data, updating memory to provide historical retrieval and reasoning information for reflection,
 and reflecting on the need to self-correct reasoning paths until arriving at the answer.
 
-1https://github.com/liyichen-cly/PoG
-
-3
-
-Evaluation
-
 No awards information of “The Joker And The 
 Queen”, “Shake It Off”, and “Cruel Summer”, 
 so I need to continue.
 
-Memory Updating
-
 Task: Answer the question “Which of Taylor Swift’s songs has won American Music Awards (AMA)?” 
 Sub-Objectives: 1. Find the songs of Taylor Swift. 2. Find the awards these songs have won. 3. Identify the song with American Music Awards (AMA).
-
-Task Decomposition
-
-Path Exploration
-
-Continue
-
-Sufficient 
-Knowledge
 
 Insufficient
 Knowledge
 Correct
-
-Output
 
 1. “The Joker And The Queen”, “Shake It Off”, 
 and “Cruel Summer” are the songs of Taylor.
 2. No relevant information.
 3. No relevant information.
 
-Blank 
-Space
-
-AMA
-
-···
-
-Award
-
-Relevant
-Irrelevant
-
-…
-
-Subgraph
-Reasoning
-
-Paths
-
-Sub-
-Objectives
-
-Album
-
-Song
-
-Song
-
-Song
-
-America
-
-Song
-
-…
-
-Blank Space
-
-Speak Now
-
-Nationality
-
-Reading
-
 Born in
 The Joker And
 
-The Queen
-
 Shake It Off
 
-Song
-
-…
-
-Taylor
-
-Swift
-
-Cruel Summer
-
 The Joker And
-
-The Queen
-
-Shake It
-
-Off
-
-Cruel 
-Summer
-
-Ed Sheeran
-
-Award
-
-Composer
-
-2022-02-11
-
-Release Date
-
-MTV VMA
-
-Lover
-
-in Album
-
-BRIT Award
-
-Award
-
-…
-
-…
-
-…
-
-Path Exploration
-
-Path Exploration
-
-Memory
-
-Reflect
-
-Evaluation
 
 “The Joker And The Queen”, “Shake It Off”, and 
 “Cruel Summer” have not won AMA, so I need to
 find other songs. I add the songs “Blank Space”,
 “Love Story”, … into the following exploration.
 
-Memory Updating
-
-Continue
-
-Sufficient 
-Knowledge
-
 Insufficient
 Knowledge
 Correct
-
-Output
 
 1. “The Joker And The Queen”, “Shake It Off”, 
 and “Cruel Summer” are the songs of Taylor.
 2. “Shake It Off” has won MTV VMA and …
 3. No relevant information.
 
-Subgraph
-Reasoning
-
-Paths
-
-Sub-
-Objectives
-
-Memory
-
-Reflect
-
-①
-
-②
-
-③
-
-④
-
-⑤
-
-⑥
-
-⑦
-
-Evaluation
-
 “Blank Space” is the song of Taylor Swift, and 
 it has won AMA. The answer is Blank Space.
-
-Memory Updating
-
-Continue
-
-Sufficient 
-Knowledge
 
 Insufficient
 Knowledge
 Correct
-
-Output
-
-Subgraph
-Reasoning
-
-Paths
-
-Sub-
-Objectives
-
-Memory
-
-Reflect
-
-⑨
-
-⑧
-
-⑩
 
 1. “The Joker …, “Blank Space”, “Love Story”, … 
 are the songs of Taylor.
 2. “Shake …, and “Blank Space” has won AMA, 
 and “Love Story” has won BMI and …
 3. “Blank Space” has won AMA.
-
-Love 
-Story
-
-BMI
-
-Award
-
-CMT Music
-
-Awards
-…
-
-Award
-
-…
 
 Figure 2: The framework overview of PoG, which includes four key components: Task Decomposi-
 tion, Path Exploration, Memory Updating, and Evaluation.
@@ -646,8 +306,6 @@ and RD−1 = {rD−1
 2
 , . . . , rD−1
 ND−1}, respectively, where ND−1 is the length of ED−1 and
-
-4
 
 RD−1. We leverage the LLM to identify the most relevant entities ED from the neighboring entities
 of the current entity set ED−1 based on the question q and extend the reasoning paths P with ED.
@@ -727,16 +385,9 @@ S = {s1, s2, s3, ...}, |S| = |O|, based on the semantic information of the quest
 O, historical sub-objective status, and reasoning paths P, along with the LLM’s own knowledge. The
 prompt is shown in Appendix A.3.
 
-3.4
-Evaluation
-
 After the path exploration and memory updating, PoG prompts the LLM to reason whether the current
 acquired information, including sub-objective states and reasoning paths recorded in memory, is
 sufficient to infer an answer. The prompt is shown in Appendix A.4.1. If the LLM determines that the
-
-2https://huggingface.co/sentence-transformers/msmarco-distilbert-base-tas-b
-
-5
 
 information is sufficient, it will integrate reasoning paths, sub-objective states, and its own knowledge
 to provide an answer. When information is considered insufficient, there may be two situations.
@@ -761,9 +412,6 @@ add into ED for the self-correction, denoted as
 ED = ED ∪ED
 add. The prompts for reflection are shown in Appendix A.4.2.
 
-4
-Experiments
-
 4.1
 Experimental Setups
 
@@ -787,8 +435,6 @@ methods on CWQ and WebQSP.
 Method
 CWQ
 WebQSP
-
-LLM-Only
 
 IO Prompt [6]
 37.6
@@ -875,19 +521,12 @@ compared to all prompting KG-augmented LLM
 baselines, PoG shows superior performance ad-
 vantages. Regardless of whether GPT-3.5 or
 
-6
-
 Table 2: Performance comparison of different methods on GrailQA.
-
-Method
-GrailQA
 
 Overall
 I.I.D.
 Compositional
 Zero-shot
-
-LLM-Only
 
 IO Prompt [6]
 29.4
@@ -1032,8 +671,6 @@ performance, with their removal leading to weaker results on complex question an
 across the evaluated datasets. These variations achieve a minimum reduction of 3.0%, 2.1%, and
 3.5% on CWQ, WebQSP, and GrailQA, respectively. The performance of w/o Memory drops the
 
-7
-
 Table 4: Efficiency comparison between our proposed PoG and the baseline ToG.
 
 Dataset
@@ -1140,8 +777,6 @@ ultimately leads to an erroneous answer due to the hallucination. CoT refuses to
 the LLM realizes its lack of knowledge regarding the answer and requires additional information to
 be provided. From this analysis, it is evident that PoG outperforms ToG and CoT. PoG successfully
 
-8
-
 Paths: The Naked and the Dead → film.film.country → United States of America
                                film.film.featured_film_locations → Panama 
       President of Panama → government.government_office_or_title.jurisdiction 
@@ -1164,46 +799,20 @@ government.governmental_jurisdiction.government_positions
 
 Question: Who is in control of the place where the movie “The Naked and the Dead” takes place?
 
-CoT
-
 Answer: [Refused to answer.] I'm sorry, but I need to clarify the question a bit 
 further in order to provide an accurate answer. Could you please specify whether 
 you are referring to the character or the entity in control of the place where 
 the movie “The Naked and the Dead” takes place? Thank you for your understanding.
-
-ToG
 
 Answer: [KG exploration failed, and the LLM answered the question according to 
 its own knowledge.] First, the movie “The Naked and the Dead” takes place during 
 World War II. Second, the United States Army is in control of the place where the 
 movie takes place.
 
-PoG
-
 Answer: [Through reflection to self-correct paths, the answer was found on the 
 revised paths.] The movie “The Naked and the Dead” takes place in Panama. The 
 President of Panama, Juan Carlos Varela, is in control of Panama based on the 
 knowledge triplets.
-
-→
-
-→
-
-→
-
-→
-
-→
-
-→
-
-→
-
-···
-
-···
-
-→
 
 Sub-Objectives: 1. Identify the place where the movie “The Naked and the Dead” 
 takes place; 2. Determine the authority or governing body in control of that place.
@@ -1244,8 +853,6 @@ limitations unexplored. Therefore, several works [3, 2, 40] first retrieved info
 then directly fed explicit knowledge into LLMs. In this way, LLMs do not involve the graph reasoning
 process and cannot provide potential insights. Then, a novel KG-augmented LLM paradigm [19, 35]
 
-9
-
 was proposed to treat the LLM as an agent to interactively explore related entities and relations on
 KGs and perform reasoning based on the retrieved knowledge. Although this KG-augmented LLM
 paradigm has achieved impressive performance, it still faces the challenges of adaptively exploring
@@ -1253,9 +860,6 @@ the KG based on question semantics and self-correcting erroneous reasoning paths
 our knowledge, our work stands out as a pioneering effort in successfully integrating a reflection
 mechanism for self-correction and adaptive KG exploration into KG-augmented LLMs, effectively
 enhancing the LLM’s reasoning ability.
-
-6
-Conclusion
 
 In this paper, we proposed a novel self-correcting adaptive planning paradigm for KG-augmented
 LLM named Plan-on-Graph (PoG). To the best of our knowledge, we were the first to incorporate a
@@ -1275,8 +879,6 @@ China (Grant No. 2023YFF0725001), the National Natural Science Foundation of Chi
 No. 92370204, 62306255), the Guangdong Basic and Applied Basic Research Foundation (Grant
 No. 2023B1515120057, 2024A1515011839), the Guangzhou-HKUST (GZ) Joint Funding Program
 (Grant No. 2023A03J0008), and the Alibaba Research Intern Program.
-
-References
 
 [1] Sören Auer, Christian Bizer, Georgi Kobilarov, Jens Lehmann, Richard Cyganiak, and Zachary
 Ives. Dbpedia: A nucleus for a web of open data. In international semantic web conference,
@@ -1305,8 +907,6 @@ In Findings of the Association for Computational Linguistics: ACL 2023, pages 21
 [8] Liyi Chen, Zhi Li, Weidong He, Gong Cheng, Tong Xu, Nicholas Jing Yuan, and Enhong
 Chen. Entity summarization via exploiting description complementarity and salience. IEEE
 Transactions on Neural Networks and Learning Systems, 34(11):8297–8309, 2023.
-
-10
 
 [9] Liyi Chen, Zhi Li, Yijun Wang, Tong Xu, Zhefeng Wang, and Enhong Chen. Mmea: Entity
 alignment for multi-modal knowledge graph. In International Conference on Knowledge
@@ -1375,8 +975,6 @@ of the Association for Computational Linguistics (Volume 1: Long Papers), pages 
 [24] Xiaonan Li and Xipeng Qiu. Mot: Memory-of-thought enables chatgpt to self-improve. In
 Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing,
 pages 6354–6374, 2023.
-
-11
 
 [25] Xiaoxi Li, Yujia Zhou, and Zhicheng Dou. Unigen: A unified generative framework for retrieval
 and question answering with large language models. In Proceedings of the AAAI Conference on
@@ -1448,8 +1046,6 @@ reasoning with chain-of-knowledge prompting. arXiv preprint arXiv:2306.06427, 20
 Rong, and Zhang Xiong. Knowledge-driven cot: Exploring faithful reasoning in llms for
 knowledge-intensive question answering. arXiv preprint arXiv:2308.13259, 2023.
 
-12
-
 [42] Lei Wang, Yi Hu, Jiabang He, Xing Xu, Ning Liu, Hui Liu, and Heng Tao Shen. T-sciq: Teaching
 multimodal chain-of-thought reasoning via large language model signals for science question
 answering. In Proceedings of the AAAI Conference on Artificial Intelligence, volume 38, pages
@@ -1505,8 +1101,6 @@ Hu, William Yang Wang, Zhiguo Wang, and Bing Xiang. Decaf: Joint decoding of ans
 logical forms for question answering over knowledge bases. In The International Conference
 on Learning Representations, 2023.
 
-13
-
 [58] Lingxi Zhang, Jing Zhang, Yanling Wang, Shulin Cao, Xinmei Huang, Cuiping Li, Hong Chen,
 and Juanzi Li. Fc-kbqa: A fine-to-coarse composition framework for knowledge base question
 answering. In The 61st Annual Meeting Of The Association For Computational Linguistics,
@@ -1529,13 +1123,6 @@ Schuurmans, Claire Cui, Olivier Bousquet, Quoc Le, et al. Least-to-most promptin
 complex reasoning in large language models. The International Conference on Learning
 Representations, 2023.
 
-14
-
-Appendix
-
-A
-Prompts
-
 Here, we provide all the prompts used in PoG. To facilitate the LLM output parsing, we require the
 LLM to provide answers using specific data structures, such as lists and JSON. Besides, we require
 the LLM not to output any other irrelevant information to the results. The specific in-context few-shot
@@ -1546,8 +1133,6 @@ Task Decomposition
 
 Please break down the process of answering the question into as few sub-objectives
 as possible based on semantic analysis.
-
-In-Context Few-Shot
 
 Now you need to directly output sub-objectives of the following question in list
 format without other information or notes.
@@ -1561,8 +1146,6 @@ Relation Exploration
 
 Please provide as few highly relevant relations as possible to the question and its
 sub-objectives from the following relations (separated by semicolons).
-
-In-Context Few-Shot
 
 Now you need to directly output relations highly related to the following question
 and its sub-objectives in list format without other information or notes.
@@ -1578,8 +1161,6 @@ Which entities in the following list ([] in Triples) can be used to answer the
 question? Please provide the minimum possible number of entities, and strictly
 adhering to the constraints mentioned in the question.
 
-In-Context Few-Shot
-
 Now you need to directly output the entities from [] in Triplets for the following
 question in list format without other information or notes.
 Q: {}
@@ -1592,29 +1173,20 @@ Based on the provided information (which may have missing parts and require furt
 retrieval) and your own knowledge, output the currently known information required
 to achieve the sub-objectives.
 
-In-Context Few-Shot
-
 Now you need to directly output the results of the following question in JSON format
 
 without other information or notes.
 Q: {}
 
-15
-
 Sub-Objectives: {}
 Memory: {}
 Knowledge Triplets: {}
-
-A.4
-Evaluation
 
 A.4.1
 Answer Question
 
 Please answer the question based on the memory, related knowledge triplets and your
 knowledge.
-
-In-Context Few-Shot
 
 Now you need to directly output the results of the following question in JSON format
 
@@ -1625,14 +1197,9 @@ Q: {}
 Memory: {}
 Knowledge Triplets: {}
 
-A.4.2
-Reflection
-
 Based on the current set of entities to be retrieved and the known information
 including memory and triplets, is it necessary to add additional entities for
 answering the question?
-
-In-Context Few-Shot
 
 Now you need to directly output the results of the following question in the JSON
 format (must include "Add" and "Reason") without other information or notes.
@@ -1645,8 +1212,6 @@ Please select the fewest necessary entities to be retrieved for answering the Q 
 
 Candidate Entities, based on the current known information (Memory), the reason for
 additional retrieval, and your own knowledge.
-
-In-Context Few-Shot
 
 Now you need to directly output the results for the following Q in the list format
 without other information or notes.
@@ -1668,8 +1233,6 @@ PREFIX ns: <\protect\vrule width0pt\protect\href{http://rdf.freebase.com/ns/}{ht
 ://rdf.freebase.com/ns/}>
 SELECT DISTINCT ?relation
 WHERE {
-
-16
 
 ns:mid ?relation ?x .
 }
@@ -1709,8 +1272,6 @@ PREFIX ns: <\protect\vrule width0pt\protect\href{http://rdf.freebase.com/ns/}{ht
 SELECT DISTINCT ?tailEntity
 WHERE {
 
-{
-
 ?entity ns:type.object.name ?tailEntity .
 FILTER(?entity = ns:mid)
 }
@@ -1722,9 +1283,6 @@ UNION
 FILTER(?entity = ns:mid)
 }
 }
-
-C
-Datasets
 
 In this paper, we use three complex multi-hop KGQA datasets: ComplexWebQuestions [37], We-
 bQSP [56], and GrailQA [17]. The statistics of datasets are shown in Table 5. WebQSP contains
@@ -1739,8 +1297,6 @@ Baseline Descriptions
 
 The baselines we compare can be categorized into two groups: (1) LLM-only methods; (2) KG-
 augmented LLM methods, including fine-tuned and prompting methods.
-
-17
 
 Table 5: Statistics of KGQA datasets.
 
@@ -1765,8 +1321,6 @@ Entity/Number
 44,337
 1,000
 -
-
-LLM-Only Methods
 
 • Standard prompting (IO prompt) [6] verifies the ability of LLMs to achieve better performance
 in task-agnostic, few-shot problems than traditional LMs.
@@ -1815,8 +1369,6 @@ interactions are under three designed universal APIs for KGs.
 whether the reasoning paths in beam search are sufficient for answering the question and if
 further retrieval of the next hop is necessary.
 
-18
-
 E
 Implementation Details
 
@@ -1828,25 +1380,6 @@ two Intel(R) Xeon(R) CPU E5-2682 v4 @ 2.50GHz and 256 GB RAM memory.
 
 F
 Depth Sensitivity
-
-52
-54
-56
-58
-60
-62
-64
-66
-
-1
-2
-3
-4
-5
-
-Accuracy
-
-Depth
 
 Figure 4: The impact of exploration
 depth on the performance of PoG.
@@ -1865,10 +1398,6 @@ and effectiveness, we set the depth to 4.
 
 G
 Case Analysis
-
-24%
-
-76%
 
 Reverse
 Not Reserse
@@ -1895,56 +1424,13 @@ mechanism in PoG has the potential to enhance the reasoning capabilities of KG-a
 and improve the performance across various datasets by allowing for self-correction and exploration
 of alternative reasoning paths.
 
-Right
-
-48%
-Wrong
-
-52%
-
-CWQ
-
-Right
-Wrong
-
-Right
-
-64%
-
-Wrong
-
-36%
-
-WebQSP
-
-Right
-Wrong
-
-Right
-
-36%
-Wrong
-
-64%
-
-GrailQA
-
-Right
-Wrong
-
 Figure 6: The proportion of correct answers obtained by PoG after self-correction.
 
 Besides, Figure 7 shows another typical case from the testing results on CWQ dataset. We compare
 the results of PoG, ToG, and CoT in answering the question “What genre of music favored by Claude
 Debussy appears in the movie Suzanne Farrell: Elusive Muse?”. PoG first adaptively identifies the
 
-3https://platform.openai.com/docs/api-reference.
-
-19
-
 Question: What genre of music favored by Claude Debussy appears in the movie Suzanne Farrell: Elusive Muse?
-
-CoT
 
 Answer: [The LLM hallucinates.] First, Claude Debussy favored the genre of music known as 
 Impressionism. Second, the movie Suzanne Farrell: Elusive Muse features music from the 
@@ -1959,28 +1445,12 @@ Paths: Claude Debussy → music.artist.genre → Incidental music →
 
 film.director.film → Deborah Dickson →
 
-···
-
-PoG
-
 Paths: Claude Debussy → music.artist.genre 
 Incidental music
 French opera
 
 Ballet
        Suzanne Farrell: Elusive Muse → film.film.genre
-
-···
-
-···
-
-···
-
-···
-
-···
-
-···
 
 Answer: [The LLM hallucinates, inferring the answer with information of one condition.] 
 Based on the given knowledge triplets, the genre of music favored by Claude Debussy that 
@@ -2032,8 +1502,6 @@ sub-objective, PoG enables the LLM to more robustly deal with the uncertainty an
 questions, making it more precise and reliable across a wide range of applications. (3) Fostering
 Innovation in the Field of Artificial Intelligence: PoG’s integration of meta-cognitive capabilities into
 
-20
-
 reasoning and planning processes represents an innovative attempt that could further propel research
 and innovation in broader AI technologies within the artificial intelligence field. (4) Improving User
 Experience and Expanding Application Domains: With PoG’s reasoning capabilities, user experience
@@ -2052,6 +1520,4 @@ task execution efficiency in situations of high self-confidence. (3) Non-Standar
 less standardized queries, semantic understanding might be insufficient due to limitations in the
 capabilities of the LLM itself, leading to decreased effectiveness. In future work, we will address this
 issue by employing SOTA query rewriting methods or interacting with the user to refine the query.
-
-21
 

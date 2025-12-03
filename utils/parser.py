@@ -42,10 +42,10 @@ class Parser:
         
         chain = prompt_template | self.llm | parser
         
-        answer = chain.invoke({
+        extracted_information = chain.invoke({
             "text": text,
             "prompt": prompt,
             "format_instructions": parser.get_format_instructions()
         })
 
-        return answer
+        return extracted_information

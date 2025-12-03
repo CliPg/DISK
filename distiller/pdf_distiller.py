@@ -7,6 +7,7 @@ from PIL import Image
 import io
 import numpy as np
 import pdf2image
+import re
 
 class PDFDistiller:
     
@@ -31,7 +32,8 @@ class PDFDistiller:
             blocks = page.get_text("blocks")
             for b in blocks:
                 text = str(b[4])
-                all_paragraphs.append(text.strip())
+                if self.is_valid_block(text):
+                    all_paragraphs.append(text.strip())
 
         """
         Example: Save extracted paragraphs to a text file for verification
@@ -41,6 +43,34 @@ class PDFDistiller:
                 f.write(para + "\n\n")
 
         return all_paragraphs
+    
+    def is_valid_block(self, text: str) -> bool:
+        """
+        Determine if a text block is valid based on certain criteria.
+        
+        Args:
+            text (str): The text block to evaluate.
+
+        Returns:
+            bool: True if the block is valid, False otherwise.
+        """
+
+        if not text:
+            return False
+
+        # minimum criteria for a valid text block
+        if len(text) < 10:
+            return False
+
+        # must contain at least one alphabetic character (English or Chinese)
+        if not re.search(r"[A-Za-z\u4e00-\u9fa5]", text):
+            return False
+
+        # must contain more than two words
+        if len(text.split()) <= 2:
+            return False
+
+        return True
 
     # TODO: need to be improved
     def extract_images_and_ocr(self, pdf_path):

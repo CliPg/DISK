@@ -2,18 +2,18 @@ from pydantic import BaseModel
 
 """The output structure LLM extracts information into"""
 
-class Entitiy(BaseModel):
+class EntitySchema(BaseModel):
     label: str
     name: str
 
-class Relation(BaseModel):
-    start_entity: Entitiy
-    end_entity: Entitiy
+class RelationSchema(BaseModel):
+    start_entity: EntitySchema
+    end_entity: EntitySchema
     label: str
     name: str
 
-class Entities(BaseModel):
-    entities: list[Entitiy]
+class EntitiesSchema(BaseModel):
+    entities: list[EntitySchema]
 
-class Relations(BaseModel):
-    relations: list[Relation]
+class RelationsSchema(BaseModel):
+    relations: list[RelationSchema]

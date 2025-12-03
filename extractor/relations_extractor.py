@@ -1,5 +1,5 @@
 from utils.parser import Parser
-from utils.schemas import Relations
+from utils.schemas import RelationsSchema
 from utils.prompts import EXTRACT_RELATIONS_PROMPT
 
 class RelationsExtractor:
@@ -10,7 +10,7 @@ class RelationsExtractor:
     def extract_entities(self, text:str):
         relations = self.parser.extract_information_as_json_from_text(
             text=text,
-            output_structure=Relations,
+            output_structure=RelationsSchema,
             prompt=EXTRACT_RELATIONS_PROMPT
         )
 
