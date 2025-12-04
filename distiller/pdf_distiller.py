@@ -32,13 +32,14 @@ class PDFDistiller:
             blocks = page.get_text("blocks")
             for b in blocks:
                 text = str(b[4])
-                if self.is_valid_block(text):
+                if self.is_valid_block(text.strip()):
                     all_paragraphs.append(text.strip())
+                
 
         """
         Example: Save extracted paragraphs to a text file for verification
         """
-        with open("extracted_paragraphs.txt", "w", encoding="utf-8") as f:
+        with open("../logs/extracted_paragraphs.log", "w", encoding="utf-8") as f:
             for para in all_paragraphs:
                 f.write(para + "\n\n")
 
@@ -69,8 +70,65 @@ class PDFDistiller:
         # must contain more than two words
         if len(text.split()) <= 2:
             return False
-
+        
+        # exclude reference format
+        if self._is_reference_format(text):
+            return False
+        
+        # must be a complete sentence
+        if self._is_a_sentence(text) == False:
+            return False
+        
         return True
+    
+    def _is_reference_format(self, text: str) -> bool:
+        """
+        Judge whether a given text block is likely to be a reference entry.
+        
+        Args:
+            text (str): The text block to evaluate.
+
+        Returns:
+            bool: True if the block is likely a reference, False otherwise.
+        """
+
+        # e.g.[10] Huasheng Liu, ...
+        pattern1 = r"\s*\[\s*\d+\s*\]\s*[A-Z][a-z]+(\s+([A-Z]\.?|\w+))?"
+
+        # e.g. Liyi Chen1,2†, Panrong Tong2, Zhongming Jin2, Ying Sun3, Jieping Ye2∗, Hui Xiong3,4∗
+        pattern2 = r"^(\s*[A-Z][A-Za-z\s]+[\d\s,\*\†\-]*\s*){3,}"
+                
+        # some key words（like 'Proceedings', 'Journal', 'Conference', 'pages', 'vol'）
+        reference_keywords = r"(Proceedings|Journal|Conference|pages|vol|ACM|IEEE|arXiv|Springer)"
+        
+        if re.search(pattern1, text):
+            with open("../logs/distill_references.log", "a", encoding="utf-8") as f:
+                f.write(text + "\n\n")
+            return True
+        
+        if re.search(reference_keywords, text, re.IGNORECASE) and re.search(r"[A-Z]\.?,\s*[A-Z]", text):
+             return True
+
+        return False
+    
+    def _is_a_sentence(self, text: str) -> bool:
+        """
+        Judge whether a given text block is likely to be a complete sentence.
+        
+        Args:
+            text (str): The text block to evaluate.
+
+        Returns:
+            bool: True if the block is likely a complete sentence, False otherwise.
+        """
+        # Check if the text ends with a sentence-ending punctuation
+        if re.search(r"[\.\?\!\。]", text.strip()):
+            return True
+        
+        with open("../logs/distill_incomplete_sentences.log", "a", encoding="utf-8") as f:
+            f.write(text + "\n\n")
+
+        return False
 
     # TODO: need to be improved
     def extract_images_and_ocr(self, pdf_path):
@@ -78,6 +136,7 @@ class PDFDistiller:
         results = []
 
         for page_index, page in enumerate(doc):
+            # 使用 page.get_images() 提取图片对象
             image_list = page.get_images(full=True)
 
             for img_index, img in enumerate(image_list):
@@ -85,13 +144,37 @@ class PDFDistiller:
                 base_image = doc.extract_image(xref)
                 image_bytes = base_image["image"]
 
-                pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-                img_np = np.array(pil_img)
+                # --- 优化点 1: 确保图片格式正确加载 ---
+                try:
+                    # 使用 Image.open 加载图片
+                    pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+                    img_np = np.array(pil_img)
+                except Exception as e:
+                    print(f"Page {page_index+1}, Image {img_index}: Failed to open image bytes: {e}")
+                    continue # 跳过无法打开的图片
 
-                ocr_result = self.ocr_model.predict(img_np)
+                # --- 优化点 2: 修正 PaddleOCR 调用和结果解析 ---
+                # 假设 ocr_model 是 PaddleOCR 实例，调用 ocr 方法
+                # 注意：PaddleOCR.ocr() 接收 np.array 列表或路径列表。
+                try:
+                    # PaddleOCR 默认返回格式：[[[bbox], [text, confidence]], ...]
+                    # 推荐使用 ocr_model.ocr() 方法
+                    ocr_results = self.ocr_model.predict(img_np) 
 
-                # 安全提取文本
-                text = "\n".join([line[1][0] for line in ocr_result if len(line) == 2 and isinstance(line[1], (tuple, list))])
+                    # 检查结果是否为空或格式不正确
+                    if ocr_results and ocr_results[0] is not None:
+                        # 结果在 ocr_results[0] 中 (因为只处理了一张图片)
+                        ocr_lines = ocr_results[0]
+
+                        # 安全提取文本： line[1] 是 [text, confidence] 列表
+                        text = "\n".join([line[1][0] for line in ocr_lines if line and len(line) > 1 and len(line[1]) > 0])
+                    else:
+                        text = ""
+
+                except Exception as e:
+                    # 捕获 OCR 过程中的异常
+                    print(f"Page {page_index+1}, Image {img_index}: OCR failed with error: {e}")
+                    text = "OCR Error"
 
                 results.append({
                     "page": page_index + 1,
@@ -101,6 +184,7 @@ class PDFDistiller:
 
         return results
     
+    # TODO: need to be improved
     def extract_tables(self, pdf_path):
         tables = []
         
@@ -123,6 +207,7 @@ class PDFDistiller:
 
         return tables
         
+    # TODO: need to be improved
     def extract_tables_improved(self, pdf_path):
         tables = []
 
@@ -159,6 +244,7 @@ class PDFDistiller:
 
         return tables
     
+    # TODO: need to be improved
     def extract_tables_horizontal_lines(self, pdf_path):
         tables = []
 

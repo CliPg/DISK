@@ -2,7 +2,7 @@ from utils.parser import Parser
 from utils.schemas import RelationsSchema
 from utils.prompts import EXTRACT_RELATIONS_PROMPT
 from models import Relation
-import tqdm
+import json
 
 class RelationsExtractor:
     
@@ -10,11 +10,24 @@ class RelationsExtractor:
         self.parser = Parser(llm=llm, embeddings=embeddings)
 
     def extract_relations(self, text:str) -> list[Relation]:
-        relations = self.parser.extract_information_as_json_from_text(
-            text=text,
-            output_structure=RelationsSchema,
-            prompt=EXTRACT_RELATIONS_PROMPT
-        )
+        """
+        Extract relations from the given text.
+        
+        Args:
+            text (str): The input text from which to extract relations.
+
+        Returns:
+            Relations: The extracted relations structured as per the Relations schema.
+        """
+        try:
+            relations = self.parser.extract_information_as_json_from_text(
+                text=text,
+                output_structure=RelationsSchema,
+                prompt=EXTRACT_RELATIONS_PROMPT
+            )
+        except Exception as e:
+            print(f"Error during relation extraction: {e}")
+            return None
 
         if len(relations["relations"]) == 0:
             print("No relations found in the text.")
@@ -22,8 +35,9 @@ class RelationsExtractor:
 
         embedded_relations = self.embed_relations(relations)
 
-        with open("relations_output.json", "w") as f:
-            f.write(str(relations))
+        with open("../results/extracted.json", "a", encoding="utf-8") as f:
+            json.dump(relations, f, ensure_ascii=False)
+            f.write("\n")
 
         return embedded_relations
 
@@ -39,11 +53,11 @@ class RelationsExtractor:
         """
         embedded_relations = []
 
-        for relation in tqdm(relations["relations"]):
+        for relation in relations["relations"]:
             embedding = self.parser.embeddings.embed_query(relation["name"])
             embedded_relation = Relation(
-                entity1=relation["start_entity"],
-                entity2=relation["end_entity"],
+                start_entity=relation["start_entity"],
+                end_entity=relation["end_entity"],
                 label=relation["label"],
                 name=relation["name"],
                 embedding=embedding

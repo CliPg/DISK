@@ -6,3 +6,9 @@ __pycache__/
 
 # config
 config/config.py
+
+# logs
+logs/
+
+# results
+results/
