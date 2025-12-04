@@ -3,7 +3,7 @@ from models import KnowledgeGraph
 class KGManager:
 
     def __init__(self, kg:KnowledgeGraph=None):
-        self.kg = kg
+        self.kg = kg if kg is not None else KnowledgeGraph()
 
     def add_entities(self, entities:list):
         for entity in entities:

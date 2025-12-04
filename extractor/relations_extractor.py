@@ -29,13 +29,13 @@ class RelationsExtractor:
             print(f"Error during relation extraction: {e}")
             return None
 
-        if len(relations["relations"]) == 0:
+        if not relations or "relations" not in relations or len(relations["relations"]) == 0:
             print("No relations found in the text.")
             return None
 
         embedded_relations = self.embed_relations(relations)
 
-        with open("../results/extracted.json", "a", encoding="utf-8") as f:
+        with open("../results/extracted_relations.json", "a", encoding="utf-8") as f:
             json.dump(relations, f, ensure_ascii=False)
             f.write("\n")
 
@@ -54,6 +54,8 @@ class RelationsExtractor:
         embedded_relations = []
 
         for relation in relations["relations"]:
+            if relation["name"] == None or relation["label"] == None:
+                continue
             embedding = self.parser.embeddings.embed_query(relation["name"])
             embedded_relation = Relation(
                 start_entity=relation["start_entity"],

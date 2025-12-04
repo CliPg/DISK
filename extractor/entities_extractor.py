@@ -29,12 +29,11 @@ class EntitiesExtractor:
             print(f"Error during entity extraction: {e}")
             return None
 
-        if len(entities["entities"]) == 0:
+        if not entities or "entities" not in entities or len(entities["entities"]) == 0:
             print("No entities found in the text.")
             return None
-
+                
         embedded_entities = self.embed_entities(entities)
-
 
         with open("../results/extracted_entities.json", "a", encoding="utf-8") as f:
             json.dump(entities, f, ensure_ascii=False)
@@ -56,6 +55,8 @@ class EntitiesExtractor:
         embedded_entities = []
 
         for entity in entities["entities"]:
+            if entity["name"] == None or entity["label"] == None:
+                continue
             embedding = self.parser.embeddings.embed_query(entity["name"])
             embedded_entity = Entity(
                 label=entity["label"],

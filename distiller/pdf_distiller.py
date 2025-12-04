@@ -12,7 +12,8 @@ import re
 class PDFDistiller:
     
     def __init__(self):
-        self.ocr_model = PaddleOCR(use_angle_cls=True, lang='en')
+        # self.ocr_model = PaddleOCR(use_angle_cls=True, lang='en')
+        pass
 
     def extract_text_blocks(self, pdf_path:str)->list:
         """

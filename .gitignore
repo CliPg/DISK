@@ -12,3 +12,6 @@ logs/
 
 # results
 results/
+
+# checkpoints
+checkpoints/
