@@ -1,5 +1,5 @@
 from utils.parser import Parser
-from utils.schemas import RelationsSchema, EntitiesSchema
+from utils.schemas import RelationsSchema, EntitiesSchema, EntitySchema
 from utils.prompts import EXTRACT_PROMPT
 from models import Relation, Entity
 from typing import List, Tuple
@@ -24,6 +24,7 @@ class Extractor:
             Relations: The extracted relations structured as per the Relations schema.
         """
         try:
+            print("Calling llm...")
             relations = self.parser.extract_information_as_json_from_text(
                 text=text,
                 output_structure=RelationsSchema,
@@ -39,6 +40,7 @@ class Extractor:
 
         entities = self.extract_entities(relations)
 
+        print("Embedding relations and entities...")
         embedded_relations = self.embed_relations(relations)
         embedded_entities = self.embed_entities(entities)
 
@@ -92,8 +94,8 @@ class Extractor:
                 continue
             embedding = self.parser.embeddings.embed_query(relation["name"])
             embedded_relation = Relation(
-                start_entity=relation["start_entity"],
-                end_entity=relation["end_entity"],
+                start_entity=self.embed_entity(relation["start_entity"]),
+                end_entity=self.embed_entity(relation["end_entity"]),
                 label=relation["label"],
                 name=relation["name"],
                 embedding=embedding
@@ -118,17 +120,32 @@ class Extractor:
         for entity in entities["entities"]:
             if entity["name"] == None or entity["label"] == None:
                 continue
-            name_embedding = self.parser.embeddings.embed_query(entity["name"])
-            label_embedding = self.parser.embeddings.embed_query(entity["label"])
 
-            embedding = self.entity_name_weight * np.array(name_embedding) + self.entity_label_weight * np.array(label_embedding)
-            embedding = embedding.tolist()
-
-            embedded_entity = Entity(
-                label=entity["label"],
-                name=entity["name"],
-                embedding=embedding
-            )
+            embedded_entity = self.embed_entity(entity)
             embedded_entities.append(embedded_entity)
 
         return embedded_entities
+    
+    def embed_entity(self, entity:EntitySchema) -> Entity:
+        """
+        Generate embedding for a single entity.
+
+        Args:
+            entity (Entity): The entity to be embedded.
+        
+        Returns:
+            Entity: The entity with its embedding.
+        """
+        name_embedding = self.parser.embeddings.embed_query(entity["name"])
+        label_embedding = self.parser.embeddings.embed_query(entity["label"])
+
+        embedding = self.entity_name_weight * np.array(name_embedding) + self.entity_label_weight * np.array(label_embedding)
+        embedding = embedding.tolist()
+
+        embedded_entity = Entity(
+            label=entity["label"],
+            name=entity["name"],
+            embedding=embedding
+        )
+
+        return embedded_entity
