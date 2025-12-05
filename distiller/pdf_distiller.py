@@ -96,13 +96,15 @@ class PDFDistiller:
         # e.g.[10] Huasheng Liu, ...
         pattern1 = r"\s*\[\s*\d+\s*\]\s*[A-Z][a-z]+(\s+([A-Z]\.?|\w+))?"
 
-        # e.g. Liyi Chen1,2†, Panrong Tong2, Zhongming Jin2, Ying Sun3, Jieping Ye2∗, Hui Xiong3,4∗
-        pattern2 = r"^(\s*[A-Z][A-Za-z\s]+[\d\s,\*\†\-]*\s*){3,}"
-                
+        # email
+        pattern2 = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+
         # some key words（like 'Proceedings', 'Journal', 'Conference', 'pages', 'vol'）
         reference_keywords = r"(Proceedings|Journal|Conference|pages|vol|ACM|IEEE|arXiv|Springer)"
+
+
         
-        if re.search(pattern1, text):
+        if re.search(pattern1, text) or re.search(pattern2, text):
             with open("../logs/distill_references.log", "a", encoding="utf-8") as f:
                 f.write(text + "\n\n")
             return True
