@@ -3,11 +3,15 @@ from utils.schemas import RelationsSchema
 from utils.prompts import EXTRACT_RELATIONS_PROMPT
 from models import Relation
 import json
+import os
 
 class RelationsExtractor:
-    
+
     def __init__(self, llm, embeddings):
         self.parser = Parser(llm=llm, embeddings=embeddings)
+        # Set results directory to project root/results
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
+        os.makedirs(self.results_dir, exist_ok=True)
 
     def extract_relations(self, text:str) -> list[Relation]:
         """
@@ -35,7 +39,7 @@ class RelationsExtractor:
 
         embedded_relations = self.embed_relations(relations)
 
-        with open("../results/extracted_relations.json", "a", encoding="utf-8") as f:
+        with open(os.path.join(self.results_dir, "extracted_relations.json"), "a", encoding="utf-8") as f:
             json.dump(relations, f, ensure_ascii=False)
             f.write("\n")
 

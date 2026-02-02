@@ -3,11 +3,15 @@ from utils.schemas import EntitiesSchema
 from utils.prompts import EXTRACT_ENTITIES_PROMPT
 from models import Entity, Relation, KnowledgeGraph
 import json
+import os
 
 class EntitiesExtractor:
-    
+
     def __init__(self, llm, embeddings):
         self.parser = Parser(llm=llm, embeddings=embeddings)
+        # Set results directory to project root/results
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
+        os.makedirs(self.results_dir, exist_ok=True)
 
     def extract_entities(self, text:str) -> list[Entity] | None:
         """
@@ -35,7 +39,7 @@ class EntitiesExtractor:
                 
         embedded_entities = self.embed_entities(entities)
 
-        with open("../results/extracted_entities.json", "a", encoding="utf-8") as f:
+        with open(os.path.join(self.results_dir, "extracted_entities.json"), "a", encoding="utf-8") as f:
             json.dump(entities, f, ensure_ascii=False)
             f.write("\n")
 

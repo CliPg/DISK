@@ -10,10 +10,12 @@ import pdf2image
 import re
 
 class PDFDistiller:
-    
+
     def __init__(self):
         # self.ocr_model = PaddleOCR(use_angle_cls=True, lang='en')
-        pass
+        # Set log directory to project root/logs
+        self.log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+        os.makedirs(self.log_dir, exist_ok=True)
 
     def extract_text_blocks(self, pdf_path:str)->list:
         """
@@ -40,7 +42,7 @@ class PDFDistiller:
         """
         Example: Save extracted paragraphs to a text file for verification
         """
-        with open("../logs/extracted_paragraphs.log", "w", encoding="utf-8") as f:
+        with open(os.path.join(self.log_dir, "extracted_paragraphs.log"), "w", encoding="utf-8") as f:
             for para in all_paragraphs:
                 f.write(para + "\n\n")
 
@@ -105,7 +107,7 @@ class PDFDistiller:
 
         
         if re.search(pattern1, text) or re.search(pattern2, text):
-            with open("../logs/distill_references.log", "a", encoding="utf-8") as f:
+            with open(os.path.join(self.log_dir, "distill_references.log"), "a", encoding="utf-8") as f:
                 f.write(text + "\n\n")
             return True
         
@@ -128,7 +130,7 @@ class PDFDistiller:
         if re.search(r"[\.\?\!\。]", text.strip()):
             return True
         
-        with open("../logs/distill_incomplete_sentences.log", "a", encoding="utf-8") as f:
+        with open(os.path.join(self.log_dir, "distill_incomplete_sentences.log"), "a", encoding="utf-8") as f:
             f.write(text + "\n\n")
 
         return False

@@ -2,14 +2,18 @@ import torch
 import torch.nn.functional as F
 from models import Entity, Relation
 from utils.schemas import EntitySchema
+import os
 
 
 class Merger:
-    def __init__(self, entities1: list[Entity]=[], entities2: list[Entity]=[], 
+    def __init__(self, entities1: list[Entity]=[], entities2: list[Entity]=[],
                 relations1: list[Relation]=[], relations2: list[Relation]=[],
                 threshold:float=0.8):
-        
+
         self.threshold = threshold
+        # Set log directory to project root/logs
+        self.log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+        os.makedirs(self.log_dir, exist_ok=True)
 
     def merge(self, entities1: list[Entity]=[], entities2: list[Entity]=[], 
                 relations1: list[Relation]=[], relations2: list[Relation]=[]) -> tuple[list[Relation], list[Entity]]:
@@ -25,10 +29,10 @@ class Merger:
             dim=-1
         )
 
-        with open("../logs/sim_matrix.log", "a") as f:
+        with open(os.path.join(self.log_dir, "sim_matrix.log"), "a") as f:
             f.write(f"Similarity Matrix:\n{sim_matrix}\n")
 
-        with open("../logs/entities.log", "a") as f:
+        with open(os.path.join(self.log_dir, "entities.log"), "a") as f:
             f.write(f"Entities1:\n")
             for e in entities1:
                 f.write(f"{e.name}\n")
@@ -71,7 +75,7 @@ class Merger:
             if i not in matched_1:
                 merged_entities.append(e1)
 
-        with open("../logs/merged_entities.log", "a") as f:
+        with open(os.path.join(self.log_dir, "merged_entities.log"), "a") as f:
             for idx1, idx2 in zip(matches[0].tolist(), matches[1].tolist()):
                 e1 = entities1[idx1]
                 e2 = entities2[idx2]
@@ -79,7 +83,7 @@ class Merger:
 
         merged_relations = self.update_and_merge_relations(entity_name_map, relations1, relations2)
 
-        with open("../logs/merged_relations.log", "a") as f:
+        with open(os.path.join(self.log_dir, "merged_relations.log"), "a") as f:
             for rel in merged_relations:
                 f.write(f"Merged relations: {rel.start_entity.name} -[{rel.name}]-> {rel.end_entity.name}\n")
 

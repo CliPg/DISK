@@ -1,5 +1,7 @@
 # env
 .venv/
+.claude/
+
 
 # cache
 __pycache__/

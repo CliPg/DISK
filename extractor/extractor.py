@@ -5,14 +5,18 @@ from models import Relation, Entity
 from typing import List, Tuple
 import json
 import numpy as np
+import os
 
 class Extractor:
-    
+
     def __init__(self, llm, embeddings,  entity_label_weight:float=0.0, entity_name_weight:float=1.0):
         self.parser = Parser(llm=llm, embeddings=embeddings)
         self.entity_label_weight = entity_label_weight
         self.entity_name_weight = entity_name_weight
         self.entity_cache = {} # save entity embeddings
+        # Set results directory to project root/results
+        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
+        os.makedirs(self.results_dir, exist_ok=True)
 
     def extract_relations_and_entities(self, text:str) -> Tuple[List[Relation], List[Entity]] | None:
         """
@@ -45,11 +49,11 @@ class Extractor:
         embedded_relations = self.embed_relations(relations)
         embedded_entities = self.embed_entities(entities)
 
-        with open("../results/extracted_relations.json", "a", encoding="utf-8") as f:
+        with open(os.path.join(self.results_dir, "extracted_relations.json"), "a", encoding="utf-8") as f:
             json.dump(relations, f, ensure_ascii=False)
             f.write("\n")
 
-        with open("../results/extracted_entities.json", "a", encoding="utf-8") as f:
+        with open(os.path.join(self.results_dir, "extracted_entities.json"), "a", encoding="utf-8") as f:
             json.dump(entities, f, ensure_ascii=False)
             f.write("\n")
 
