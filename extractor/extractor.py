@@ -12,6 +12,7 @@ class Extractor:
         self.parser = Parser(llm=llm, embeddings=embeddings)
         self.entity_label_weight = entity_label_weight
         self.entity_name_weight = entity_name_weight
+        self.entity_cache = {} # save entity embeddings
 
     def extract_relations_and_entities(self, text:str) -> Tuple[List[Relation], List[Entity]] | None:
         """
@@ -90,8 +91,19 @@ class Extractor:
         embedded_relations = []
 
         for relation in relations["relations"]:
-            if relation["name"] == None or relation["label"] == None:
+            relation_name = relation.get("name")
+            relation_label = relation.get("label")
+            start_entity = relation.get("start_entity")
+            end_entity = relation.get("end_entity")
+
+            if not self.is_valid_string(relation_name) or not self.is_valid_string(relation_label):
+                print("invalid relation name or label, skipping...")
                 continue
+
+            if not self.is_valid_entity(start_entity) or not self.is_valid_entity(end_entity):
+                print("invalid start or end entity, skipping...")
+                continue
+
             embedding = self.parser.embeddings.embed_query(relation["name"])
             embedded_relation = Relation(
                 start_entity=self.embed_entity(relation["start_entity"]),
@@ -118,7 +130,10 @@ class Extractor:
         embedded_entities = []
 
         for entity in entities["entities"]:
-            if entity["name"] == None or entity["label"] == None:
+            name = entity.get("name")
+            label = entity.get("label")
+            if not self.is_valid_string(name) or not self.is_valid_string(label):
+                print("invalid entity name or label, skipping...")
                 continue
 
             embedded_entity = self.embed_entity(entity)
@@ -136,6 +151,13 @@ class Extractor:
         Returns:
             Entity: The entity with its embedding.
         """
+        name = entity.get("name")
+        label = entity.get("label")
+
+        key = (entity["name"], entity["label"])
+        if key in self.entity_cache:
+            return self.entity_cache[key]
+
         name_embedding = self.parser.embeddings.embed_query(entity["name"])
         label_embedding = self.parser.embeddings.embed_query(entity["label"])
 
@@ -148,4 +170,20 @@ class Extractor:
             embedding=embedding
         )
 
+        self.entity_cache[key] = embedded_entity
+
         return embedded_entity
+
+    def is_valid_entity(self, value):
+        if not isinstance(value, str):
+            return False
+        if not value.strip():
+            return False
+        return True
+
+    def is_valid_string(self, value):
+        if not isinstance(value, str):
+            return False
+        if not value.strip():
+            return False
+        return True
