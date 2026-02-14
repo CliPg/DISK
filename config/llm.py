@@ -6,7 +6,7 @@ from config.config import api_key
 # ------------ Qwen API ------------ #
 llm = ChatTongyi(
     api_key=api_key,
-    model="glm-4.7",
+    model="qwen-plus",
     temperature=0,
     max_retries=3
 )
