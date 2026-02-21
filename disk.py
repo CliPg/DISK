@@ -5,6 +5,7 @@ from merger import Merger
 from models import KnowledgeGraph
 from tqdm import tqdm
 from utils import load_checkpoint, save_checkpoint
+from models.neo4j_connector import Neo4jConnector
 
 class DISK:
     """
@@ -95,3 +96,15 @@ class DISK:
         self.kg_manager.add_relations(all_relations)
 
         return self.kg_manager.kg
+    
+    def visualize_knowledge_graph(self, uri, user, password, entities:list=None, relations:list=None):
+        connector = Neo4jConnector(uri=uri, user=user, password=password)
+        if entities is not None:
+            connector.create_entities(entities)
+        else:
+            connector.create_entities(self.kg_manager.kg.entities)
+        if relations is not None:
+            connector.create_relations(relations)
+        else:
+            connector.create_relations(self.kg_manager.kg.relations)
+        connector.close()

@@ -8,3 +8,4 @@ paddlepaddle
 langchain-community
 dashscope
 langchain-ollama
+neo4j

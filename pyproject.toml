@@ -36,6 +36,7 @@ dependencies = [
     "torch",
     "numpy",
     "tqdm",
+    "neo4j",
 ]
 
 [project.optional-dependencies]

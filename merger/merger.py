@@ -6,17 +6,16 @@ import os
 
 
 class Merger:
-    def __init__(self, entities1: list[Entity]=[], entities2: list[Entity]=[],
-                relations1: list[Relation]=[], relations2: list[Relation]=[],
-                threshold:float=0.8):
+    def __init__(self, threshold:float=0.8):
 
         self.threshold = threshold
         # Set log directory to project root/logs
         self.log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
         os.makedirs(self.log_dir, exist_ok=True)
 
-    def merge(self, entities1: list[Entity]=[], entities2: list[Entity]=[], 
-                relations1: list[Relation]=[], relations2: list[Relation]=[]) -> tuple[list[Relation], list[Entity]]:
+
+    def merge(self, entities1: list[Entity], entities2: list[Entity], 
+                relations1: list[Relation], relations2: list[Relation]) -> tuple[list[Relation], list[Entity]]:
 
         # step1: compute embeddings
         emb1 = torch.stack([torch.tensor(e.embedding) for e in entities1])   # (N, D)

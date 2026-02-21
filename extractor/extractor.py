@@ -104,10 +104,6 @@ class Extractor:
                 print("invalid relation name or label, skipping...")
                 continue
 
-            if not self.is_valid_entity(start_entity) or not self.is_valid_entity(end_entity):
-                print("invalid start or end entity, skipping...")
-                continue
-
             embedding = self.parser.embeddings.embed_query(relation["name"])
             embedded_relation = Relation(
                 start_entity=self.embed_entity(relation["start_entity"]),
@@ -177,13 +173,6 @@ class Extractor:
         self.entity_cache[key] = embedded_entity
 
         return embedded_entity
-
-    def is_valid_entity(self, value):
-        if not isinstance(value, str):
-            return False
-        if not value.strip():
-            return False
-        return True
 
     def is_valid_string(self, value):
         if not isinstance(value, str):
