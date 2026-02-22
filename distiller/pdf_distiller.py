@@ -1,19 +1,19 @@
-import fitz  # PyMuPDF
-import pdfplumber
-import pandas as pd
-import os
-from paddleocr import PaddleOCR
-from PIL import Image
 import io
-import numpy as np
-import pdf2image
+import os
 import re
+
+import fitz  # PyMuPDF
 import jieba
+import numpy as np
+import pandas as pd
+import pdfplumber
+from PIL import Image
+from rapidocr_onnxruntime import RapidOCR
+
 
 class PDFDistiller:
-
     def __init__(self):
-        # self.ocr_model = PaddleOCR(use_angle_cls=True, lang='en')
+        self.ocr_model = RapidOCR(use_angle_cls=True, lang="en")
         # Set log directory to project root/logs
         self.log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
         os.makedirs(self.log_dir, exist_ok=True)
