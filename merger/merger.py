@@ -43,10 +43,10 @@ class Merger:
             f.write(f"Similarity Matrix:\n{sim_matrix}\n")
 
         with open(os.path.join(self.log_dir, "entities.log"), "a") as f:
-            f.write(f"Entities1:\n")
+            f.write("Entities1:\n")
             for e in entities1:
                 f.write(f"{e.name}\n")
-            f.write(f"Entities2:\n")
+            f.write("Entities2:\n")
             for e in entities2:
                 f.write(f"{e.name}\n")
 
