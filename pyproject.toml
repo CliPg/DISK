@@ -6,7 +6,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-    { name = "Your Name", email = "your.email@example.com" }
+    { name = "Liu Huasheng", email = "clipg@qq.com" },
+    { name = "Wu Junkai", email = "wu.junkai@qq.com" }
 ]
 keywords = ["knowledge-graph", "nlp", "llm", "pdf-processing", "entity-extraction"]
 classifiers = [
@@ -33,7 +34,6 @@ dependencies = [
     "langchain-core",
     "dashscope",
     "langchain-ollama",
-    "torch",
     "numpy",
     "tqdm",
     "neo4j",
