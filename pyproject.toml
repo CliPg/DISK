@@ -37,6 +37,7 @@ dependencies = [
     "numpy",
     "tqdm",
     "neo4j",
+    "jieba",
 ]
 
 [project.optional-dependencies]

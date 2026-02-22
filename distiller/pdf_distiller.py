@@ -8,6 +8,7 @@ import io
 import numpy as np
 import pdf2image
 import re
+import jieba
 
 class PDFDistiller:
 
@@ -60,26 +61,32 @@ class PDFDistiller:
         """
 
         if not text:
+            print("Empty block found, skipping.")
             return False
 
         # minimum criteria for a valid text block
         if len(text) < 10:
+            print(f"Block too short (length {len(text)}), skipping: {text}")
             return False
 
         # must contain at least one alphabetic character (English or Chinese)
         if not re.search(r"[A-Za-z\u4e00-\u9fa5]", text):
+            print(f"Block does not contain alphabetic characters, skipping: {text}")
             return False
 
         # must contain more than two words
-        if len(text.split()) <= 2:
+        if len(text.split()) <= 2 and len(list(jieba.cut(text))) <= 2:
+            print(f"Block does not contain more than two words, skipping: {text}")
             return False
         
         # exclude reference format
         if self._is_reference_format(text):
+            print(f"Block identified as reference format, skipping: {text}")
             return False
         
         # must be a complete sentence
         if self._is_a_sentence(text) == False:
+            print(f"Block does not appear to be a complete sentence, skipping: {text}")
             return False
         
         return True
