@@ -16,27 +16,24 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 
 dependencies = [
     "pdfplumber",
-    "pdf2image",
     "pillow",
     "pandas",
     "pymupdf",
-    "langchain-community",
+    "langchain-community>=0.4.1",
     "langchain-core",
-    "dashscope",
-    "langchain-ollama",
     "numpy",
     "tqdm",
     "neo4j",
     "jieba",
     "rapidocr-onnxruntime>=1.4.4",
-    "tomli>=2.4.0",
+    "openai>=2.21.0",
+    "langchain-openai>=1.1.7",
 ]
 
 [project.optional-dependencies]
