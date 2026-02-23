@@ -200,20 +200,49 @@ sequenceDiagram
 ## Config
 
 **env**
-```
-python3.10 -m venv .venv
-pip install -r requirements.txt
+```bash
+# use uv to manage the environment
+uv venv
+uv sync
 ```
 
-**llm config**
-```
-cd config
-touch config.py
+**LLM Configuration**
 
-# then configure your api key in this file
-# current default llm is Qwen, 
-# you can switch to other model in config/llm.py
+1. Copy the example configuration file:
+```bash
+cp config.example.toml config.toml
 ```
+
+2. Edit `config.toml` to set your API keys and preferences:
+
+```toml
+[disk]
+llm = "openai"  # Choose provider: openai, qwen, ollama, etc.
+
+[disk.embeddings]
+model = "text-embedding-3-small"
+api_key = "ai-..."
+api_url = "https://api.openai.com/v1"
+
+[model.openai]
+api_url = "https://api.openai.com/v1"
+api_key = "ai-..."
+model = "gpt-4o"
+
+[model.other]
+api_url = "https://api.otherprovider.com/v1"
+api_key = "sk-..."
+model = "gpt-4o"
+```
+
+3. Supported providers:
+   - **OpenAI** (default)
+   - **Qwen** (DashScope)
+   - **Kimi** (Moonshot)
+   - **Ollama** (Local)
+   - **All other providers** that support OpenAI-compatible APIs
+
+You can switch providers by changing the `llm` field in `[disk]` or using the runtime `switch()` function.
 
 
 ## Contrast
