@@ -749,6 +749,7 @@ dependencies = [
     { name = "pillow" },
     { name = "pymupdf" },
     { name = "rapidocr-onnxruntime" },
+    { name = "tomli" },
     { name = "tqdm" },
 ]
 
@@ -785,6 +786,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "rapidocr-onnxruntime", specifier = ">=1.4.4" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
+    { name = "tomli", specifier = ">=2.4.0" },
     { name = "tqdm" },
 ]
 provides-extras = ["dev"]
