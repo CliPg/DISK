@@ -22,6 +22,7 @@ class DISK:
         self.kg_manager = KGManager(kg=kg)
         self.merger = Merger()
 
+    """
     def build_knowledge_graph(self, pdf_path: str) -> KnowledgeGraph:
         all_entities = []
         all_relations = []
@@ -62,10 +63,15 @@ class DISK:
         self.kg_manager.add_relations(all_relations)
 
         return self.kg_manager.kg
+    """
 
-    def build_knowledge_graph_single_extractor(self, pdf_path: str) -> KnowledgeGraph:
-        all_entities = []
-        all_relations = []
+    def build_knowledge_graph(self, pdf_path: str) -> KnowledgeGraph:
+        if self.kg_manager.is_existing_kg:
+            all_entities = self.kg_manager.kg.entities
+            all_relations = self.kg_manager.kg.relations
+        else:
+            all_entities = []
+            all_relations = []
         # ckpt = load_checkpoint()
         # start_relation_block = ckpt["relation_block_idx"]
         start_relation_block = 0
