@@ -1,10 +1,10 @@
 [disk]
-llm = "openai"
+llm = "qwen"
 
 [disk.embeddings]
-api_url = "https://open.feishu.cn/open-apis/embeddings/v1"
-api_key = "cli_a9b1c2d3e4f5678901234567890abcdef"
-model = "text-embedding-3-small"
+api_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+api_key = "your_api_key"
+model = "text-embedding-v4"
 
 [model.openai]
 api_url = "https://api.openai.com/v1/engines/davinci/completions"
@@ -12,9 +12,9 @@ api_key = "your_api_key"
 model = "GPT-5.1"
 
 [model.qwen]
-api_url = "https://api.qwen.com/v1/engines/qwen/completions"
+api_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 api_key = "your_api_key"
-model = "Qwen-2.5"
+model = "qwen-plus"
 
 [model.kimi]
 api_url = "https://api.kimi.com/v1/engines/kimi/completions"

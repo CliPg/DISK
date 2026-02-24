@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import tomllib
+from langchain_core.runnables import Runnable
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 # 路径设置与配置加载
@@ -26,7 +27,7 @@ def _get_params(provider: str) -> dict[str, str]:
     }
 
 
-class LLMProxy:
+class LLMProxy(Runnable):
     """LLM 代理，允许运行时切换底层提供商"""
 
     def __init__(self, provider: str):
@@ -38,6 +39,16 @@ class LLMProxy:
 
     def __getattr__(self, name):
         return getattr(self._instance, name)
+
+    # Runnable interface implementation
+    def invoke(self, input, config=None, **kwargs):
+        return self._instance.invoke(input, config, **kwargs)
+
+    def stream(self, input, config=None, **kwargs):
+        return self._instance.stream(input, config, **kwargs)
+
+    def batch(self, inputs, config=None, **kwargs):
+        return self._instance.batch(inputs, config, **kwargs)
 
 
 # 初始化全局对象
