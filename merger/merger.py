@@ -6,7 +6,7 @@ from models import Entity, Relation
 
 
 class Merger:
-    def __init__(self, threshold: float = 0.8):
+    def __init__(self, threshold: float = 0.65):
         self.threshold = threshold
         # Set log directory to project root/logs
         self.log_dir = os.path.join(
