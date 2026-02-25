@@ -43,17 +43,24 @@ class Neo4jConnector:
         """
         Creates nodes in the Neo4j database for each entity in the list.
         Each node will be tagged with graph_id for data isolation.
+        Uses MERGE to avoid duplicate entities.
         """
         for entity in entities:
             # 使用反引号包裹标签，支持包含空格的标签名
             label = entity.label.replace("`", "``")  # 转义反引号
 
             # 构建 SET 子句，包含 graph_id 和其他属性
-            set_clause = "name: $name, embedding: $embedding"
+            set_clause = "n.name = $name, n.embedding = $embedding"
             if self.graph_id:
-                set_clause += ", graph_id: $graph_id"
+                set_clause += ", n.graph_id = $graph_id"
 
-            query = f"CREATE (n:`{label}` {{{set_clause}}}) RETURN n"
+            # 构建 MERGE 的匹配条件（包含 graph_id）
+            if self.graph_id:
+                match_props = "name: $name, graph_id: $graph_id"
+            else:
+                match_props = "name: $name"
+
+            query = f"MERGE (n:`{label}` {{{match_props}}}) SET {set_clause} RETURN n"
             parameters = {"name": entity.name, "embedding": entity.embedding}
             if self.graph_id:
                 parameters["graph_id"] = self.graph_id
@@ -63,6 +70,7 @@ class Neo4jConnector:
         """
         Creates relationships in the Neo4j database for each relation in the list.
         Each relationship will be tagged with graph_id for data isolation.
+        Uses MERGE to avoid duplicate relations.
         """
         for relation in relations:
             # 使用反引号包裹标签，支持包含空格的标签名
@@ -71,14 +79,22 @@ class Neo4jConnector:
             rel_label = relation.label.replace("`", "``")
 
             # 构建 SET 子句，包含 graph_id 和其他属性
-            set_clause = "name: $name, embedding: $embedding"
+            set_clause = "r.name = $name, r.embedding = $embedding"
             if self.graph_id:
-                set_clause += ", graph_id: $graph_id"
+                set_clause += ", r.graph_id = $graph_id"
+
+            # MATCH 时需要考虑 graph_id 以确保图谱隔离
+            if self.graph_id:
+                start_match = f"a:`{start_label}` {{name: $start_name, graph_id: $graph_id}}"
+                end_match = f"b:`{end_label}` {{name: $end_name, graph_id: $graph_id}}"
+            else:
+                start_match = f"a:`{start_label}` {{name: $start_name}}"
+                end_match = f"b:`{end_label}` {{name: $end_name}}"
 
             query = f"""
-            MATCH (a:`{start_label}` {{name: $start_name}}),
-                  (b:`{end_label}` {{name: $end_name}})
-            CREATE (a)-[r:`{rel_label}` {{{set_clause}}}]->(b)
+            MATCH ({start_match}), ({end_match})
+            MERGE (a)-[r:`{rel_label}`]->(b)
+            SET {set_clause}
             RETURN a, b, r
             """
             parameters = {

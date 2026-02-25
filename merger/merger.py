@@ -55,6 +55,7 @@ class Merger:
 
         merged_entities = []
         used_2 = set()
+        used_1 = set()
 
         entity_name_map = {}
 
@@ -62,6 +63,7 @@ class Merger:
             e1 = entities1[idx1]
             e2 = entities2[idx2]
             used_2.add(idx2)
+            used_1.add(idx1)  # 标记 entities1 中已合并的索引
 
             merged_entity = Entity(
                 name=e1.name,  # 或者合并名字
@@ -80,9 +82,8 @@ class Merger:
                 merged_entities.append(e2)
 
         # 5. 再加上 entities1 中没有匹配到的实体
-        matched_1 = set(matches[0].tolist())
         for i, e1 in enumerate(entities1):
-            if i not in matched_1:
+            if i not in used_1:
                 merged_entities.append(e1)
 
         with open(os.path.join(self.log_dir, "merged_entities.log"), "a") as f:
