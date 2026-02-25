@@ -110,7 +110,8 @@ class Extractor:
                 end_entity=self.embed_entity(relation["end_entity"]),
                 label=relation["label"],
                 name=relation["name"],
-                embedding=embedding
+                embedding=embedding,
+                description=relation.get("description", "")
             )
             embedded_relations.append(embedded_relation)
 
@@ -167,7 +168,8 @@ class Extractor:
         embedded_entity = Entity(
             label=entity["label"],
             name=entity["name"],
-            embedding=embedding
+            embedding=embedding,
+            description=entity.get("description", "")
         )
 
         self.entity_cache[key] = embedded_entity

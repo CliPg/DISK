@@ -65,7 +65,8 @@ class EntitiesExtractor:
             embedded_entity = Entity(
                 label=entity["label"],
                 name=entity["name"],
-                embedding=embedding
+                embedding=embedding,
+                description=entity.get("description", "")
             )
             embedded_entities.append(embedded_entity)
 

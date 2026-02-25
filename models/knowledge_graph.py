@@ -1,14 +1,16 @@
 class Entity():
-    def __init__(self, label:str, name:str, embedding):
+    def __init__(self, label:str, name:str, embedding, description: str = ""):
         """
         Args:
             label (str): type of the entity
             name (str): entity name
             embedding: entity embedding vector
+            description (str): detailed description of the entity in the text
         """
         self.label = label
         self.name = name
         self.embedding = embedding
+        self.description = description
 
     def __eq__(self, other):
         """通过 name 和 label 判断实体是否相等"""
@@ -21,11 +23,11 @@ class Entity():
         return hash((self.name, self.label))
 
     def __repr__(self):
-        return f"Entity(label={self.label}, name={self.name})"
+        return f"Entity(label={self.label}, name={self.name}, description={self.description})"
 
 
 class Relation():
-    def __init__(self, start_entity:Entity, end_entity:Entity, label:str, name:str, embedding):
+    def __init__(self, start_entity:Entity, end_entity:Entity, label:str, name:str, embedding, description: str = ""):
         """
         Args:
             start_entity (Entity): the starting entity of the relation
@@ -33,12 +35,14 @@ class Relation():
             label (str): type of the relation
             name (str): relation name
             embedding: relation embedding vector
+            description (str): detailed description of the relation in the text
         """
         self.start_entity = start_entity
         self.end_entity = end_entity
         self.label = label
         self.name = name
         self.embedding = embedding
+        self.description = description
 
     def __eq__(self, other):
         """通过起点、终点、类型和名称判断关系是否相等"""
@@ -54,7 +58,7 @@ class Relation():
         return hash((self.start_entity.name, self.end_entity.name, self.label, self.name))
 
     def __repr__(self):
-        return f"Relation({self.start_entity.name} -[{self.label}]-> {self.end_entity.name})"
+        return f"Relation({self.start_entity.name} -[{self.label}]-> {self.end_entity.name}, description={self.description})"
 
 
 class KnowledgeGraph:

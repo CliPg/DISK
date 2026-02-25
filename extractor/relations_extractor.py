@@ -66,7 +66,8 @@ class RelationsExtractor:
                 end_entity=relation["end_entity"],
                 label=relation["label"],
                 name=relation["name"],
-                embedding=embedding
+                embedding=embedding,
+                description=relation.get("description", "")
             )
             embedded_relations.append(embedded_relation)
 

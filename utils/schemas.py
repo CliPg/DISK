@@ -5,12 +5,14 @@ from pydantic import BaseModel
 class EntitySchema(BaseModel):
     label: str
     name: str
+    description: str
 
 class RelationSchema(BaseModel):
     start_entity: EntitySchema
     end_entity: EntitySchema
     label: str
     name: str
+    description: str
 
 class EntitiesSchema(BaseModel):
     entities: list[EntitySchema]

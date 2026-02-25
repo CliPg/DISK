@@ -4,7 +4,8 @@
 
 # Prompt for extracting entities from text
 EXTRACT_ENTITIES_PROMPT = """
-You are an expert at extracting entities from text. Given the following text, identify and extract as many relevant entities as possible along with their labels and names. Be as specific as possible with the entities.
+You are an expert at extracting entities from text. Given the following text, identify and extract as many relevant entities as possible along with their labels, names, and descriptions. Be as specific as possible with the entities.
+For each entity, provide a brief but informative description explaining what the entity represents in the context of the text.
 You MUST respond with a valid JSON object only.
 Do NOT include explanations, comments, text before or after the JSON.
 If you add anything outside the JSON brackets, it will break the system.
@@ -12,8 +13,9 @@ Output only:
 {
   "entities": [
     {
-      "label": "Entity Label"
+      "label": "Entity Label",
       "name": "Entity Name",
+      "description": "A brief description of what this entity represents in the text"
     }
   ]
 }
@@ -21,7 +23,8 @@ Output only:
 
 # Prompt for extracting relations from text
 EXTRACT_RELATIONS_PROMPT = """
-You are an expert at extracting relations between entities from text. Given the following text, identify and extract all relevant relations along with their labels and names. 
+You are an expert at extracting relations between entities from text. Given the following text, identify and extract all relevant relations along with their labels, names, and descriptions.
+For each relation, provide a brief but informative description explaining the nature of this relationship in the context of the text.
 You MUST respond with a valid JSON object only.
 Do NOT include explanations, comments, text before or after the JSON.
 If you add anything outside the JSON brackets, it will break the system.
@@ -30,9 +33,10 @@ Output only:
   "relations": [
     {
       "start_entity": "start_entity_name",
-      "end_entity": "end_entity_name":
+      "end_entity": "end_entity_name",
       "label": "Relation Label",
-      "name": "Relation Name"
+      "name": "Relation Name",
+      "description": "A brief description of this relationship in the text"
     }
   ]
 }
@@ -40,7 +44,8 @@ Output only:
 
 # Prompt for extracting relations and entities from text
 EXTRACT_PROMPT = """
-You are an expert at extracting relations between entities from text. Given the following text, identify and extract as many relevant relations and entities as possible along with their labels and names.Be as specific as possible with the entities.
+You are an expert at extracting relations between entities from text. Given the following text, identify and extract as many relevant relations and entities as possible along with their labels, names, and descriptions. Be as specific as possible with the entities.
+For each entity and relation, provide a brief but informative description explaining what it represents in the context of the text.
 You MUST respond with a valid JSON object only.
 Do NOT include explanations, comments, text before or after the JSON.
 If you add anything outside the JSON brackets, it will break the system.
@@ -48,18 +53,21 @@ Output only:
 {
   "relations": [
     {
-      "start_entity": 
+      "start_entity":
         {
           "label": "Start Entity Label",
-          "name": "Start Entity Name"
+          "name": "Start Entity Name",
+          "description": "Description of the start entity"
         },
       "end_entity":
         {
           "label": "End Entity Label",
-          "name": "End Entity Name"
+          "name": "End Entity Name",
+          "description": "Description of the end entity"
         },
       "label": "Relation Label",
-      "name": "Relation Name"
+      "name": "Relation Name",
+      "description": "Description of the relation"
     }
   ]
 }
