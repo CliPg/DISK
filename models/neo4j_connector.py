@@ -50,7 +50,7 @@ class Neo4jConnector:
             label = entity.label.replace("`", "``")  # 转义反引号
 
             # 构建 SET 子句，包含 graph_id 和其他属性
-            set_clause = "n.name = $name, n.embedding = $embedding"
+            set_clause = "n.name = $name, n.embedding = $embedding, n.description = $description"
             if self.graph_id:
                 set_clause += ", n.graph_id = $graph_id"
 
@@ -61,7 +61,7 @@ class Neo4jConnector:
                 match_props = "name: $name"
 
             query = f"MERGE (n:`{label}` {{{match_props}}}) SET {set_clause} RETURN n"
-            parameters = {"name": entity.name, "embedding": entity.embedding}
+            parameters = {"name": entity.name, "embedding": entity.embedding, "description": entity.description if hasattr(entity, 'description') else ""}
             if self.graph_id:
                 parameters["graph_id"] = self.graph_id
             self.run_query(query, parameters)
@@ -79,7 +79,7 @@ class Neo4jConnector:
             rel_label = relation.label.replace("`", "``")
 
             # 构建 SET 子句，包含 graph_id 和其他属性
-            set_clause = "r.name = $name, r.embedding = $embedding"
+            set_clause = "r.name = $name, r.embedding = $embedding, r.description = $description"
             if self.graph_id:
                 set_clause += ", r.graph_id = $graph_id"
 
@@ -101,7 +101,8 @@ class Neo4jConnector:
                 "start_name": relation.start_entity.name,
                 "end_name": relation.end_entity.name,
                 "name": relation.name,
-                "embedding": relation.embedding
+                "embedding": relation.embedding,
+                "description": relation.description if hasattr(relation, 'description') else ""
             }
             if self.graph_id:
                 parameters["graph_id"] = self.graph_id
