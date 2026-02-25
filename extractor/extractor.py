@@ -9,10 +9,11 @@ import os
 
 class Extractor:
 
-    def __init__(self, llm, embeddings,  entity_label_weight:float=0.0, entity_name_weight:float=1.0):
+    def __init__(self, llm, embeddings,  entity_label_weight:float=0.0, entity_name_weight:float=0.3, entity_description_weight:float=0.7):
         self.parser = Parser(llm=llm, embeddings=embeddings)
         self.entity_label_weight = entity_label_weight
         self.entity_name_weight = entity_name_weight
+        self.entity_description_weight = entity_description_weight
         self.entity_cache = {} # save entity embeddings
         # Set results directory to project root/results
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
@@ -161,8 +162,9 @@ class Extractor:
 
         name_embedding = self.parser.embeddings.embed_query(entity["name"])
         label_embedding = self.parser.embeddings.embed_query(entity["label"])
+        description_embedding = self.parser.embeddings.embed_query(entity.get("description", ""))
 
-        embedding = self.entity_name_weight * np.array(name_embedding) + self.entity_label_weight * np.array(label_embedding)
+        embedding = self.entity_name_weight * np.array(name_embedding) + self.entity_label_weight * np.array(label_embedding) + self.entity_description_weight * np.array(description_embedding)
         embedding = embedding.tolist()
 
         embedded_entity = Entity(
