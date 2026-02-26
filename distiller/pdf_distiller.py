@@ -22,6 +22,7 @@ class PDFDistiller:
         """
         extract blocks per page from pdf.
         one block usually corresponds to one paragraph.
+        blocks shorter than 10 characters are merged with the next block.
 
         Args:
             pdf_path (str): path to the pdf file
@@ -30,23 +31,36 @@ class PDFDistiller:
             list: list of paragraphs extracted from the pdf
         """
         doc = fitz.open(pdf_path)
-        all_paragraphs = []
+        raw_blocks = []
 
         for page in doc:
             blocks = page.get_text("blocks")
             for b in blocks:
-                text = str(b[4])
-                if self.is_valid_block(text.strip()):
-                    all_paragraphs.append(text.strip())
+                text = str(b[4]).strip()
+                if text:  # 收集所有非空文本块
+                    raw_blocks.append(text)
+
+        # 合并短块：长度小于10的合并到下一个块
+        merged_paragraphs = []
+        i = 0
+        while i < len(raw_blocks):
+            current = raw_blocks[i]
+            # 如果当前块长度小于10，且不是最后一个块，则合并到下一个块
+            if len(current) < 10 and i + 1 < len(raw_blocks):
+                current += " " + raw_blocks[i + 1]
+                i += 1  # 跳过下一个块，因为已经合并了
+            if self.is_valid_block(current):
+                merged_paragraphs.append(current)
+            i += 1
 
         """
         Example: Save extracted paragraphs to a text file for verification
         """
         (self.log_dir / "extracted_paragraphs.log").write_text(
-            "\n\n".join(all_paragraphs), encoding="utf-8"
+            "\n\n".join(merged_paragraphs), encoding="utf-8"
         )
 
-        return all_paragraphs
+        return merged_paragraphs
 
     def is_valid_block(self, text: str) -> bool:
         """
@@ -61,11 +75,6 @@ class PDFDistiller:
 
         if not text:
             print("Empty block found, skipping.")
-            return False
-
-        # minimum criteria for a valid text block
-        if len(text) < 10:
-            print(f"Block too short (length {len(text)}), skipping: {text}")
             return False
 
         # must contain at least one alphabetic character (English or Chinese)
