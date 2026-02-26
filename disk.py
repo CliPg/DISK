@@ -272,40 +272,111 @@ class DISK:
         all_entities: list,
         batch_size: int,
     ) -> tuple[list, list]:
-        """分批合并提取结果."""
-        batch_entities = []
-        batch_relations = []
-        merge_count = 0
-
-        for i, result in enumerate(results):
+        """并发两两归并式合并提取结果."""
+        # Step 1: 收集所有非空的结果块
+        blocks = []
+        for result in results:
             if result is None:
                 continue
-
             relations, entities = result
-            batch_entities.extend(entities)
-            batch_relations.extend(relations)
+            if entities and relations:
+                blocks.append((relations, entities))
 
-            # 每处理 batch_size 个块进行一次合并
-            if (i + 1) % batch_size == 0 or i == len(results) - 1:
-                if len(batch_entities) > 0 and len(batch_relations) > 0:
-                    if len(all_entities) > 0 and len(all_relations) > 0:
-                        logger.info(f"Merging batch {merge_count + 1}...")
-                        all_relations, all_entities = self.merger.merge(
-                            entities1=all_entities,
-                            relations1=all_relations,
-                            entities2=batch_entities,
-                            relations2=batch_relations,
-                        )
-                        merge_count += 1
-                    else:
-                        all_entities = batch_entities
-                        all_relations = batch_relations
+        if not blocks:
+            logger.warning("No valid blocks to merge")
+            return all_relations, all_entities
 
-                batch_entities = []
-                batch_relations = []
+        logger.info(f"Starting concurrent pairwise merge with {len(blocks)} blocks")
 
-        logger.info(f"Completed {merge_count} merges")
+        # Step 2: 并发两两归并，直到只剩一个块
+        round_num = 0
+        while len(blocks) > 1:
+            round_num += 1
+            logger.info(f"Merge round {round_num}: {len(blocks)} blocks -> {(len(blocks) + 1) // 2} blocks")
+
+            # 将块两两分组
+            pairs = []
+            for i in range(0, len(blocks), 2):
+                if i + 1 < len(blocks):
+                    pairs.append((blocks[i], blocks[i + 1]))
+                else:
+                    # 奇数个块时，最后一个直接保留
+                    pairs.append((blocks[i], None))
+
+            # 并发合并每一对
+            new_blocks = []
+            with ThreadPoolExecutor() as executor:
+                futures = {
+                    executor.submit(self._merge_pair, pair, round_num, idx): idx
+                    for idx, pair in enumerate(pairs)
+                }
+
+                for future in as_completed(futures):
+                    idx = futures[future]
+                    try:
+                        result = future.result()
+                        if result:
+                            new_blocks.append(result)
+                    except Exception as e:
+                        logger.error(f"Error merging pair {idx} in round {round_num}: {e}")
+
+            # 按原始顺序排序，保持稳定性
+            new_blocks.sort(key=lambda x: x[2] if len(x) > 2 else 0)
+            # 移除索引标记
+            blocks = [block[:2] for block in new_blocks]
+
+        # Step 3: 此时 blocks 只有一个元素，与现有图谱合并
+        new_relations, new_entities = blocks[0]
+
+        if len(all_entities) > 0 and len(all_relations) > 0:
+            logger.info("Merging new document with existing knowledge graph...")
+            all_relations, all_entities = self.merger.merge(
+                entities1=all_entities,
+                relations1=all_relations,
+                entities2=new_entities,
+                relations2=new_relations,
+            )
+        else:
+            all_entities = new_entities
+            all_relations = new_relations
+
+        logger.info(f"Completed concurrent pairwise merge in {round_num} rounds")
         return all_relations, all_entities
+
+    def _merge_pair(self, pair: tuple, round_num: int, pair_idx: int) -> tuple | None:
+        """
+        合并一对块。
+
+        Args:
+            pair: (block1, block2)，block2可能为None
+            round_num: 当前合并轮次
+            pair_idx: 当前对的索引
+
+        Returns:
+            (merged_relations, merged_entities, original_idx) 或 None
+        """
+        block1, block2 = pair
+        relations1, entities1 = block1
+
+        if block2 is None:
+            # 只有一个块，直接返回（带上索引用于排序）
+            return (relations1, entities1, pair_idx)
+
+        relations2, entities2 = block2
+
+        try:
+            merged_relations, merged_entities = self.merger.merge(
+                entities1=entities1,
+                relations1=relations1,
+                entities2=entities2,
+                relations2=relations2,
+            )
+            logger.debug(f"Round {round_num}, pair {pair_idx}: merged {len(entities1)}+{len(entities2)} entities -> {len(merged_entities)} entities")
+            return (merged_relations, merged_entities, pair_idx)
+        except Exception as e:
+            logger.error(f"Error in round {round_num}, pair {pair_idx}: {e}")
+            # 失败时返回第一个块
+            return (relations1, entities1, pair_idx)
 
     def visualize_knowledge_graph(
         self, uri, user, password, entities: list | None = None, relations: list | None = None
