@@ -1,33 +1,49 @@
 from utils.parser import Parser
 from utils.schemas import RelationsSchema
 from utils.prompts import EXTRACT_RELATIONS_PROMPT
+from utils.prompts import get_prompts
+from utils.lang_detect import detect_document_language
 from models import Relation
 import json
 import os
 
 class RelationsExtractor:
 
-    def __init__(self, llm, embeddings):
+    def __init__(self, llm, embeddings, language: str = None):
+        """
+        Args:
+            llm: Language model instance
+            embeddings: Embeddings instance
+            language: 'zh' for Chinese, 'en' for English, or None for auto-detection
+        """
         self.parser = Parser(llm=llm, embeddings=embeddings)
+        self.language = language
+        self.prompts = get_prompts(language)
         # Set results directory to project root/results
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
         os.makedirs(self.results_dir, exist_ok=True)
 
-    def extract_relations(self, text:str) -> list[Relation]:
+    def extract_relations(self, text:str, pdf_path: str = None) -> list[Relation]:
         """
         Extract relations from the given text.
-        
+
         Args:
             text (str): The input text from which to extract relations.
+            pdf_path (str): Optional path to PDF file for language detection.
 
         Returns:
             Relations: The extracted relations structured as per the Relations schema.
         """
+        # Auto-detect language if not set and pdf_path is provided
+        if self.language is None and pdf_path:
+            detected_lang = detect_document_language(file_path=pdf_path, text_content=text[:500])
+            self.prompts = get_prompts(detected_lang)
+
         try:
             relations = self.parser.extract_information_as_json_from_text(
                 text=text,
                 output_structure=RelationsSchema,
-                prompt=EXTRACT_RELATIONS_PROMPT
+                prompt=self.prompts['extract_relations']
             )
         except Exception as e:
             print(f"Error during relation extraction: {e}")

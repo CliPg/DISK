@@ -10,3 +10,5 @@ dashscope
 langchain-ollama
 neo4j
 python-dotenv
+# Optional: for improved language detection (fallback to regex if not installed)
+# fasttext-langdetect

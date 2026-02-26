@@ -1,6 +1,8 @@
 from utils.parser import Parser
 from utils.schemas import RelationsSchema, EntitiesSchema, EntitySchema
 from utils.prompts import EXTRACT_PROMPT
+from utils.prompts import get_prompts
+from utils.lang_detect import detect_document_language
 from models import Relation, Entity
 from typing import List, Tuple
 import json
@@ -9,32 +11,49 @@ import os
 
 class Extractor:
 
-    def __init__(self, llm, embeddings,  entity_label_weight:float=0.0, entity_name_weight:float=0.3, entity_description_weight:float=0.7):
+    def __init__(self, llm, embeddings, entity_label_weight:float=0.0, entity_name_weight:float=0.3, entity_description_weight:float=0.7, language: str = None):
+        """
+        Args:
+            llm: Language model instance
+            embeddings: Embeddings instance
+            entity_label_weight: Weight for entity label in embedding
+            entity_name_weight: Weight for entity name in embedding
+            entity_description_weight: Weight for entity description in embedding
+            language: 'zh' for Chinese, 'en' for English, or None for auto-detection
+        """
         self.parser = Parser(llm=llm, embeddings=embeddings)
         self.entity_label_weight = entity_label_weight
         self.entity_name_weight = entity_name_weight
         self.entity_description_weight = entity_description_weight
+        self.language = language
+        self.prompts = get_prompts(language)
         self.entity_cache = {} # save entity embeddings
         # Set results directory to project root/results
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
         os.makedirs(self.results_dir, exist_ok=True)
 
-    def extract_relations_and_entities(self, text:str) -> Tuple[List[Relation], List[Entity]] | None:
+    def extract_relations_and_entities(self, text:str, pdf_path: str = None) -> Tuple[List[Relation], List[Entity]] | None:
         """
         Extract relations from the given text.
-        
+
         Args:
             text (str): The input text from which to extract relations.
+            pdf_path (str): Optional path to PDF file for language detection.
 
         Returns:
             Relations: The extracted relations structured as per the Relations schema.
         """
+        # Auto-detect language if not set and pdf_path is provided
+        if self.language is None and pdf_path:
+            detected_lang = detect_document_language(file_path=pdf_path, text_content=text[:500])
+            self.prompts = get_prompts(detected_lang)
+
         try:
             print("Calling llm...")
             relations = self.parser.extract_information_as_json_from_text(
                 text=text,
                 output_structure=RelationsSchema,
-                prompt=EXTRACT_PROMPT
+                prompt=self.prompts['extract']
             )
         except Exception as e:
             print(f"Error during relation extraction: {e}")

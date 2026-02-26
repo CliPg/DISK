@@ -60,19 +60,19 @@ class RateLimiter:
             time.sleep(wait_time)
 
 
-def _get_local_extractor(llm, embeddings):
+def _get_local_extractor(llm, embeddings, language: str = None):
     """获取当前线程的 Extractor 实例."""
     if not hasattr(_thread_local, "extractor"):
-        _thread_local.extractor = Extractor(llm=llm, embeddings=embeddings)
+        _thread_local.extractor = Extractor(llm=llm, embeddings=embeddings, language=language)
     return _thread_local.extractor
 
 
-def _extract_with_local_extractor(text, llm, embeddings, rate_limiter: RateLimiter | None = None):
+def _extract_with_local_extractor(text, llm, embeddings, rate_limiter: RateLimiter | None = None, pdf_path: str = None, language: str = None):
     """在线程池中执行的提取函数."""
     if rate_limiter is not None:
         rate_limiter.wait_if_needed()
-    extractor = _get_local_extractor(llm, embeddings)
-    return extractor.extract_relations_and_entities(text)
+    extractor = _get_local_extractor(llm, embeddings, language)
+    return extractor.extract_relations_and_entities(text, pdf_path=pdf_path)
 
 
 class DISK:
@@ -86,16 +86,27 @@ class DISK:
         embeddings,
         kg: KnowledgeGraph | None = None,
         max_requests_per_second: float = 5,
+        language: str = None,
     ):
+        """
+        Args:
+            llm: Language model instance
+            embeddings: Embeddings instance
+            kg: Optional existing KnowledgeGraph
+            max_requests_per_second: Rate limit for API calls
+            language: 'zh' for Chinese, 'en' for English, or None for auto-detection
+        """
         self.distiller = PDFDistiller()
-        self.entities_extractor = EntitiesExtractor(llm=llm, embeddings=embeddings)
-        self.relations_extractor = RelationsExtractor(llm=llm, embeddings=embeddings)
-        self.extractor = Extractor(llm=llm, embeddings=embeddings)
+        self.language = language
+        self.entities_extractor = EntitiesExtractor(llm=llm, embeddings=embeddings, language=language)
+        self.relations_extractor = RelationsExtractor(llm=llm, embeddings=embeddings, language=language)
+        self.extractor = Extractor(llm=llm, embeddings=embeddings, language=language)
         self.kg_manager = KGManager(kg=kg)
         self.merger = Merger()
         self.llm = llm
         self.embeddings = embeddings
         self.rate_limiter = RateLimiter(max_requests_per_second=max_requests_per_second)
+        self.current_pdf_path = None  # Store current pdf_path for language detection
 
     """
     def build_knowledge_graph(self, pdf_path: str) -> KnowledgeGraph:
@@ -159,6 +170,9 @@ class DISK:
         Returns:
             KnowledgeGraph: 构建好的知识图谱
         """
+        # Store current pdf_path for language detection
+        self.current_pdf_path = pdf_path
+
         if self.kg_manager.is_existing_kg:
             all_entities = self.kg_manager.kg.entities
             all_relations = self.kg_manager.kg.relations
@@ -173,6 +187,18 @@ class DISK:
         # Step 1: 提取文本块
         texts = self.distiller.extract_text_blocks(pdf_path)
         logger.info(f"Extracted {len(texts)} text blocks from PDF")
+
+        # Auto-detect language if not set
+        if self.language is None and texts:
+            from utils.lang_detect import detect_document_language
+            from utils.prompts import get_prompts
+            detected_lang = detect_document_language(file_path=pdf_path, text_content=texts[0][:500] if texts else "")
+            logger.info(f"Detected document language: {detected_lang}")
+            # Update extractors with detected language
+            prompts = get_prompts(detected_lang)
+            self.entities_extractor.prompts = prompts
+            self.relations_extractor.prompts = prompts
+            self.extractor.prompts = prompts
 
         # Step 2: 提取实体和关系
         if mode == "parallel":
@@ -197,10 +223,10 @@ class DISK:
         failed_count = 0
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # 提交所有任务，传入 rate_limiter
+            # 提交所有任务，传入 rate_limiter, pdf_path 和 language
             futures = {
                 executor.submit(
-                    _extract_with_local_extractor, text, self.llm, self.embeddings, self.rate_limiter
+                    _extract_with_local_extractor, text, self.llm, self.embeddings, self.rate_limiter, self.current_pdf_path, self.language
                 ): i
                 for i, text in enumerate(texts)
             }
@@ -231,7 +257,7 @@ class DISK:
 
         for text in tqdm(texts, desc="Extracting entities and relations (serial)"):
             try:
-                result = self.extractor.extract_relations_and_entities(text)
+                result = self.extractor.extract_relations_and_entities(text, pdf_path=self.current_pdf_path)
                 results.append(result)
             except Exception as e:
                 logger.error(f"Error processing text block: {e}")
