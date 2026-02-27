@@ -4,12 +4,12 @@ llm = "qwen"
 [disk.embeddings]
 api_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 api_key = "your_api_key"
-model = "text-embedding-v4"
+model = "text-embedding-v3"
 
 [model.openai]
-api_url = "https://api.openai.com/v1/engines/davinci/completions"
+api_url = "https://api.openai.com/v1"
 api_key = "your_api_key"
-model = "GPT-5.1"
+model = "gpt-5"
 
 [model.qwen]
 api_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -17,10 +17,15 @@ api_key = "your_api_key"
 model = "qwen-plus"
 
 [model.kimi]
-api_url = "https://api.kimi.com/v1/engines/kimi/completions"
+api_url = "https://api.moonshot.cn/v1"
 api_key = "your_api_key"
-model = "Kimi-1.0"
+model = "kimi-k2.5"
 
 [model.ollama]
-api_url = "http://localhost:11434/v1/engines/ollama/completions"
-model = "Ollama-1.0"
+api_url = "http://localhost:11434/v1"
+model = "llama3.2"
+
+[model.gemini]
+api_url = "https://generativelanguage.googleapis.com/v1beta"
+api_key = "your_api_key"
+model = "gemini-3.0-flash"
