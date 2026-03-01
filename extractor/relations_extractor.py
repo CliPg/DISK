@@ -9,14 +9,15 @@ import os
 
 class RelationsExtractor:
 
-    def __init__(self, llm, embeddings, language: str = None):
+    def __init__(self, llm, embeddings, language: str = None, token_callback=None):
         """
         Args:
             llm: Language model instance
             embeddings: Embeddings instance
             language: 'zh' for Chinese, 'en' for English, or None for auto-detection
+            token_callback: Token tracking callback handler
         """
-        self.parser = Parser(llm=llm, embeddings=embeddings)
+        self.parser = Parser(llm=llm, embeddings=embeddings, token_callback=token_callback)
         self.language = language
         self.prompts = get_prompts(language)
         # Set results directory to project root/results

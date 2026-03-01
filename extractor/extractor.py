@@ -11,7 +11,7 @@ import os
 
 class Extractor:
 
-    def __init__(self, llm, embeddings, entity_label_weight:float=0.0, entity_name_weight:float=0.3, entity_description_weight:float=0.7, language: str = None):
+    def __init__(self, llm, embeddings, entity_label_weight:float=0.0, entity_name_weight:float=0.3, entity_description_weight:float=0.7, language: str = None, token_callback=None):
         """
         Args:
             llm: Language model instance
@@ -20,14 +20,16 @@ class Extractor:
             entity_name_weight: Weight for entity name in embedding
             entity_description_weight: Weight for entity description in embedding
             language: 'zh' for Chinese, 'en' for English, or None for auto-detection
+            token_callback: Token tracking callback handler
         """
-        self.parser = Parser(llm=llm, embeddings=embeddings)
+        self.parser = Parser(llm=llm, embeddings=embeddings, token_callback=token_callback)
         self.entity_label_weight = entity_label_weight
         self.entity_name_weight = entity_name_weight
         self.entity_description_weight = entity_description_weight
         self.language = language
         self.prompts = get_prompts(language)
         self.entity_cache = {} # save entity embeddings
+        self.token_callback = token_callback
         # Set results directory to project root/results
         self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
         os.makedirs(self.results_dir, exist_ok=True)

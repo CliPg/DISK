@@ -8,6 +8,7 @@ from utils.prompts import (
 )
 from utils.checkpoint_helper import load_checkpoint, save_checkpoint
 from utils.lang_detect import detect_document_language
+from utils.token_tracker import TokenTracker, TokenTrackingCallbackHandler, estimate_tokens
 
 __all__ = [
     "Parser",
@@ -22,4 +23,7 @@ __all__ = [
     "load_checkpoint",
     "save_checkpoint",
     "detect_document_language",
+    "TokenTracker",
+    "TokenTrackingCallbackHandler",
+    "estimate_tokens",
 ]

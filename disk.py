@@ -60,18 +60,18 @@ class RateLimiter:
             time.sleep(wait_time)
 
 
-def _get_local_extractor(llm, embeddings, language: str = None):
+def _get_local_extractor(llm, embeddings, language: str = None, token_callback=None):
     """获取当前线程的 Extractor 实例."""
     if not hasattr(_thread_local, "extractor"):
-        _thread_local.extractor = Extractor(llm=llm, embeddings=embeddings, language=language)
+        _thread_local.extractor = Extractor(llm=llm, embeddings=embeddings, language=language, token_callback=token_callback)
     return _thread_local.extractor
 
 
-def _extract_with_local_extractor(text, llm, embeddings, rate_limiter: RateLimiter | None = None, pdf_path: str = None, language: str = None):
+def _extract_with_local_extractor(text, llm, embeddings, rate_limiter: RateLimiter | None = None, pdf_path: str = None, language: str = None, token_callback=None):
     """在线程池中执行的提取函数."""
     if rate_limiter is not None:
         rate_limiter.wait_if_needed()
-    extractor = _get_local_extractor(llm, embeddings, language)
+    extractor = _get_local_extractor(llm, embeddings, language, token_callback)
     return extractor.extract_relations_and_entities(text, pdf_path=pdf_path)
 
 
@@ -87,6 +87,8 @@ class DISK:
         kg: KnowledgeGraph | None = None,
         max_requests_per_second: float = 5,
         language: str = None,
+        enable_token_tracking: bool = True,
+        model_name: str = None,
     ):
         """
         Args:
@@ -95,12 +97,24 @@ class DISK:
             kg: Optional existing KnowledgeGraph
             max_requests_per_second: Rate limit for API calls
             language: 'zh' for Chinese, 'en' for English, or None for auto-detection
+            enable_token_tracking: 是否启用token使用跟踪
+            model_name: 模型名称，用于成本估算
         """
+        from utils import TokenTracker, TokenTrackingCallbackHandler, estimate_tokens
+
         self.distiller = PDFDistiller()
         self.language = language
-        self.entities_extractor = EntitiesExtractor(llm=llm, embeddings=embeddings, language=language)
-        self.relations_extractor = RelationsExtractor(llm=llm, embeddings=embeddings, language=language)
-        self.extractor = Extractor(llm=llm, embeddings=embeddings, language=language)
+
+        # Token跟踪
+        self.enable_token_tracking = enable_token_tracking
+        self.model_name = model_name or self._extract_model_name(llm)
+        self.token_tracker = TokenTracker(model_name=self.model_name) if enable_token_tracking else None
+        self.token_callback = TokenTrackingCallbackHandler(self.token_tracker) if enable_token_tracking else None
+
+        # 使用原始LLM（不包装），通过回调跟踪token
+        self.entities_extractor = EntitiesExtractor(llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback)
+        self.relations_extractor = RelationsExtractor(llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback)
+        self.extractor = Extractor(llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback)
         self.kg_manager = KGManager(kg=kg)
         self.merger = Merger()
         self.llm = llm
@@ -215,6 +229,9 @@ class DISK:
         self.kg_manager.add_entities(all_entities)
         self.kg_manager.add_relations(all_relations)
 
+        # 打印Token使用统计
+        self.print_token_summary()
+
         return self.kg_manager.kg
 
     def _extract_parallel(self, texts: list[str], max_workers: int) -> list:
@@ -223,10 +240,10 @@ class DISK:
         failed_count = 0
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # 提交所有任务，传入 rate_limiter, pdf_path 和 language
+            # 提交所有任务，传入 rate_limiter, pdf_path, language 和 token_callback
             futures = {
                 executor.submit(
-                    _extract_with_local_extractor, text, self.llm, self.embeddings, self.rate_limiter, self.current_pdf_path, self.language
+                    _extract_with_local_extractor, text, self.llm, self.embeddings, self.rate_limiter, self.current_pdf_path, self.language, self.token_callback
                 ): i
                 for i, text in enumerate(texts)
             }
@@ -391,3 +408,37 @@ class DISK:
         else:
             connector.create_relations(self.kg_manager.kg.relations)
         connector.close()
+
+    # --------------------#
+    # Token tracking methods #
+    # --------------------#
+
+    def print_token_summary(self):
+        """打印Token使用统计摘要"""
+        if self.token_tracker:
+            self.token_tracker.print_summary()
+        else:
+            print("Token tracking is not enabled.")
+
+    def get_token_summary(self) -> dict | None:
+        """获取Token使用统计"""
+        if self.token_tracker:
+            return self.token_tracker.get_summary()
+        return None
+
+    def save_token_usage(self):
+        """保存Token使用记录"""
+        if self.token_tracker:
+            self.token_tracker.save()
+
+    def _extract_model_name(self, llm) -> str:
+        """从LLM对象中提取模型名称"""
+        # 尝试从不同LLM类型中提取模型名
+        if hasattr(llm, 'model'):
+            return str(llm.model)
+        elif hasattr(llm, 'model_name'):
+            return str(llm.model_name)
+        elif hasattr(llm, '_llm_type'):
+            return str(llm._llm_type)
+        else:
+            return "unknown"
