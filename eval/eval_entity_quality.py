@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 # max samples
-MAX_SAMPLES = 1
+MAX_SAMPLES = 2
 
 from disk import DISK
 from config.llm import llm, embeddings
@@ -207,37 +207,48 @@ class EntityEvaluator:
             # 提取预测实体
             pred_entities = self._extract_predicted_entities(text)
 
-            # 计算匹配
-            matched_gt = set()
-            matched_pred = set()
-            correct_entities = []
-            missed_entities = []
-            wrong_entities = []
-
+            # 对预测实体按名称去重（保留第一个出现的）
+            pred_entities_dict = {}  # name -> entity
             for pred_entity in pred_entities:
-                is_match, is_type_correct = self._match_entity(pred_entity, gt_entities)
-                if is_match:
-                    true_positive += 1
-                    matched_pred.add(pred_entity)
-                    if is_type_correct:
-                        correct_type += 1
-                        correct_entities.append({
-                            "name": pred_entity.name,
-                            "label": pred_entity.label,
-                            "type_correct": True
-                        })
-                    else:
-                        correct_entities.append({
-                            "name": pred_entity.name,
-                            "label": pred_entity.label,
-                            "type_correct": False
-                        })
-                    # 标记已匹配的真实实体
-                    for gt_entity in gt_entities:
-                        if self._normalize_entity_name(pred_entity.name) in self._normalize_entity_name(gt_entity.name):
-                            matched_gt.add(gt_entity)
-                            break
-                else:
+                if pred_entity.name not in pred_entities_dict:
+                    pred_entities_dict[pred_entity.name] = pred_entity
+            unique_pred_entities = list(pred_entities_dict.values())
+
+            # 计算匹配 - 每个真实实体只能被匹配一次
+            matched_gt_names = set()  # 已被匹配的真实实体名称
+            correct_entities = []
+            wrong_entities = []
+            missed_entities = []
+
+            for pred_entity in unique_pred_entities:
+                matched = False
+                type_correct = False
+
+                for gt_entity in gt_entities:
+                    if gt_entity.name in matched_gt_names:
+                        continue  # 这个真实实体已经被匹配过了
+
+                    is_match, is_type_correct = self._match_entity(pred_entity, {gt_entity})
+                    if is_match:
+                        matched = True
+                        matched_gt_names.add(gt_entity.name)
+                        true_positive += 1
+                        if is_type_correct:
+                            correct_type += 1
+                            correct_entities.append({
+                                "name": pred_entity.name,
+                                "label": pred_entity.label,
+                                "type_correct": True
+                            })
+                        else:
+                            correct_entities.append({
+                                "name": pred_entity.name,
+                                "label": pred_entity.label,
+                                "type_correct": False
+                            })
+                        break  # 匹配成功，停止检查其他真实实体
+
+                if not matched:
                     wrong_entities.append({
                         "name": pred_entity.name,
                         "label": pred_entity.label
@@ -245,27 +256,29 @@ class EntityEvaluator:
 
             # 找出未被提取的真实实体
             for gt_entity in gt_entities:
-                if gt_entity not in matched_gt:
+                if gt_entity.name not in matched_gt_names:
                     missed_entities.append({
                         "name": gt_entity.name,
                         "label": gt_entity.label
                     })
 
             total_ground_truth += len(gt_entities)
-            total_extracted += len(pred_entities)
+            total_extracted += len(unique_pred_entities)
 
             # 保存每条数据的详细信息
             details.append({
                 "index": idx,
                 "text": text[:100] + "..." if len(text) > 100 else text,  # 文本预览
                 "ground_truth_entities": [{"name": e.name, "label": e.label} for e in gt_entities],
-                "extracted_entities": [{"name": e.name, "label": e.label} for e in pred_entities],
+                "extracted_entities": [{"name": e.name, "label": e.label} for e in pred_entities],  # 原始提取结果（未去重）
+                "extracted_entities_unique": [{"name": e.name, "label": e.label} for e in unique_pred_entities],  # 去重后的提取结果
                 "correct_entities": correct_entities,
                 "wrong_entities": wrong_entities,
                 "missed_entities": missed_entities,
                 "stats": {
                     "ground_truth_count": len(gt_entities),
                     "extracted_count": len(pred_entities),
+                    "extracted_unique_count": len(unique_pred_entities),
                     "correct_count": len(correct_entities),
                     "wrong_count": len(wrong_entities),
                     "missed_count": len(missed_entities)
@@ -273,7 +286,9 @@ class EntityEvaluator:
             })
 
         # 计算指标
+        # 准确率 = 正确实体数 / 总提取实体数（去重后）
         precision = true_positive / total_extracted if total_extracted > 0 else 0.0
+        # 召回率 = 正确实体数 / 真实实体总数
         recall = true_positive / total_ground_truth if total_ground_truth > 0 else 0.0
         f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
         type_accuracy = correct_type / true_positive if true_positive > 0 else 0.0
