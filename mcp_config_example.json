@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "disk-kg-local": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/PATH/TO/DISK",
+        "run",
+        "--no-dev",
+        "python",
+        "mcp_server.py"
+      ],
+      "env": {
+        "DISK_CONFIG_PATH": "C:/Users/wujun/Desktop/DISK/config.toml"
+      }
+    },
+    "disk-kg-uvx": {
+      "command": "uvx",
+      "args": ["--from", "disk-kg", "python", "-m", "mcp_server"],
+      "env": {
+        "DISK_CONFIG_PATH": "/path/to/your/config.toml"
+      }
+    }
+  }
+}

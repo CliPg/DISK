@@ -35,6 +35,7 @@ dependencies = [
     "openai>=2.21.0",
     "langchain-openai>=1.1.7",
     "docx2txt>=0.9",
+    "mcp>=1.26.0",
 ]
 
 [project.optional-dependencies]
