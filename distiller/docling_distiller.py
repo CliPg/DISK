@@ -1,12 +1,16 @@
 import re
+
 import jieba
-import pandas as pd
-from docling.document_converter import DocumentConverter
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import PdfPipelineOptions
-from docling.datamodel.document import TableItem, PictureItem, TextItem
+
+try:
+    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from docling.document_converter import DocumentConverter
+    from docling_core.types.doc.document import PictureItem, TableItem, TextItem
+except ImportError:
+    exit(0)
 
 from .distiller import Distiller
+
 
 class DoclingDistiller(Distiller):
     """
@@ -60,9 +64,7 @@ class DoclingDistiller(Distiller):
 
         # Log for verification
         (self.log_dir / "docling_extracted_paragraphs.log").write_text(
-            "
-
-".join(merged_paragraphs), encoding="utf-8"
+            "".join(merged_paragraphs), encoding="utf-8"
         )
 
         return merged_paragraphs
@@ -77,17 +79,20 @@ class DoclingDistiller(Distiller):
         Returns:
             list[dict]: List of dicts with 'page', 'image', 'ocr_text'.
         """
+        raise RuntimeError("no support OCR")
         result = self.converter.convert(file_path)
         results = []
 
         for item, _ in result.document.iterate_items():
             if isinstance(item, PictureItem):
                 # Docling integrates OCR results directly into the item text if OCR is enabled
-                results.append({
-                    "page": item.prov[0].page_no if item.prov else "unknown",
-                    "image": None,  # Images are not kept in memory by default to save RAM
-                    "ocr_text": item.text if hasattr(item, "text") else ""
-                })
+                results.append(
+                    {
+                        "page": item.prov[0].page_no if item.prov else "unknown",
+                        "image": None,  # Images are not kept in memory by default to save RAM
+                        "ocr_text": item.references if hasattr(item, "text") else "",
+                    }
+                )
 
         return results
 

@@ -53,7 +53,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = []
+dev = [
+    "docling>=2.80.0",
+]
 
 [tool.black]
 line-length = 100
