@@ -24,9 +24,9 @@ if not os.path.exists(CONFIG_PATH):
     CONFIG_EXISTS = False
 else:
     # If using custom path, update the config module's path
-    import disk_kg.config.llm
+    import disk_kg.provider.llm
 
-    disk_kg.config.llm.CONFIG_PATH = CONFIG_PATH
+    disk_kg.provider.llm.CONFIG_PATH = CONFIG_PATH
     CONFIG_EXISTS = True
 
 # Initialize FastMCP
@@ -42,7 +42,7 @@ def get_disk():
         raise FileNotFoundError("config.toml not found. Please create it from config.example.toml.")
     if _disk_instance is None:
         from disk_kg import DISK
-        from disk_kg.config.llm import embeddings, llm
+        from disk_kg.provider.llm import embeddings, llm
 
         _disk_instance = DISK(llm=llm, embeddings=embeddings)
     return _disk_instance

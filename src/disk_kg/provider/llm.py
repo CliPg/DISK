@@ -2,7 +2,7 @@ from pathlib import Path
 
 import tomllib
 from langchain_core.runnables import Runnable
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
 
 # 路径设置与配置加载
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -56,12 +56,3 @@ _disk = _CONFIG.get("disk", {})
 
 # LLM 代理初始化
 llm = LLMProxy(_disk.get("llm", "openai"))
-
-# Embeddings 直接从 [disk.embeddings] 初始化
-_emb_cfg = _disk.get("embeddings", {})
-embeddings = OpenAIEmbeddings(
-    model=_emb_cfg.get("model"),
-    api_key=_emb_cfg.get("api_key"),
-    base_url=_emb_cfg.get("api_url"),
-    check_embedding_ctx_length=False,
-)

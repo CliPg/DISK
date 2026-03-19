@@ -1,11 +1,5 @@
-import os
-import sys
-from pathlib import Path
-ROOT = Path().resolve().parent
-sys.path.append(str(ROOT))
-
-from disk import DISK
-from config.llm import llm, embeddings
+from disk_kg import DISK
+from disk_kg.provider.llm import embeddings, llm
 
 pdf_path = "tests/sample.pdf"
 disk = DISK(llm=llm, embeddings=embeddings)
