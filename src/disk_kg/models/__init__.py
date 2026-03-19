@@ -1,2 +1,3 @@
-from .knowledge_graph import Entity, Relation, KnowledgeGraph
+from .knowledge_graph import Entity, KnowledgeGraph, Relation
+
 __all__ = ["Entity", "Relation", "KnowledgeGraph"]

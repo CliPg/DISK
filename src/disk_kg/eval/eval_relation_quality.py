@@ -5,9 +5,10 @@
 
 import json
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
-from dataclasses import dataclass
+
 from tqdm import tqdm
 
 # 添加项目根目录到路径
@@ -17,22 +18,25 @@ sys.path.insert(0, str(ROOT))
 # max samples
 MAX_SAMPLES = 2
 
+from config.llm import embeddings, llm
 from disk import DISK
-from config.llm import llm, embeddings
 from utils import TokenTracker
 
 
 @dataclass
 class Relation:
     """关系类"""
-    subject: str      # 主体实体名称
-    object: str       # 客体实体名称
-    predicate: str    # 关系类型
+
+    subject: str  # 主体实体名称
+    object: str  # 客体实体名称
+    predicate: str  # 关系类型
 
     def __eq__(self, other):
-        return (self.subject == other.subject and
-                self.object == other.object and
-                self.predicate == other.predicate)
+        return (
+            self.subject == other.subject
+            and self.object == other.object
+            and self.predicate == other.predicate
+        )
 
     def __hash__(self):
         return hash((self.subject, self.object, self.predicate))
@@ -41,15 +45,16 @@ class Relation:
 @dataclass
 class RelationEvaluationMetrics:
     """关系评估指标"""
-    precision: float       # 准确率
-    recall: float          # 召回率
-    f1: float              # F1值
+
+    precision: float  # 准确率
+    recall: float  # 召回率
+    f1: float  # F1值
     direction_accuracy: float  # 方向准确率
-    total_ground_truth: int    # 真实关系总数
-    total_extracted: int      # 提取关系总数
-    true_positive: int        # 正确关系数
-    direction_correct: int    # 方向正确数
-    details: List[Dict]      # 每条数据的详细信息
+    total_ground_truth: int  # 真实关系总数
+    total_extracted: int  # 提取关系总数
+    true_positive: int  # 正确关系数
+    direction_correct: int  # 方向正确数
+    details: List[Dict]  # 每条数据的详细信息
 
 
 class RelationEvaluator:
@@ -79,7 +84,7 @@ class RelationEvaluator:
     def _load_dataset(self) -> List[Dict]:
         """加载数据集"""
         data = []
-        with open(self.dataset_path, 'r', encoding='utf-8') as f:
+        with open(self.dataset_path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -89,7 +94,7 @@ class RelationEvaluator:
                         continue
 
         # 限制样本数量
-        return data[:self.max_samples]
+        return data[: self.max_samples]
 
     def _extract_ground_truth_relations(self, data_item: Dict) -> Set[Relation]:
         """
@@ -103,12 +108,12 @@ class RelationEvaluator:
         """
         relations = set()
 
-        for spo in data_item.get('spo_list', []):
-            subject = spo.get('subject')
-            obj = spo.get('object')
+        for spo in data_item.get("spo_list", []):
+            subject = spo.get("subject")
+            obj = spo.get("object")
             if isinstance(obj, dict):
-                obj = obj.get('@value')
-            predicate = spo.get('predicate')
+                obj = obj.get("@value")
+            predicate = spo.get("predicate")
 
             if subject and obj and predicate:
                 relations.add(Relation(subject=subject, object=obj, predicate=predicate))
@@ -128,7 +133,7 @@ class RelationEvaluator:
         # 调用DISK的关系提取器
         from extractor import RelationsExtractor
 
-        extractor = RelationsExtractor(llm=self.llm, embeddings=self.embeddings, language='zh')
+        extractor = RelationsExtractor(llm=self.llm, embeddings=self.embeddings, language="zh")
         result = extractor.extract_relations(text)
 
         if result is None:
@@ -141,22 +146,22 @@ class RelationEvaluator:
             subject = rel.start_entity
             obj = rel.end_entity
 
-            subject_name = subject.name if hasattr(subject, 'name') else subject
-            object_name = obj.name if hasattr(obj, 'name') else obj
+            subject_name = subject.name if hasattr(subject, "name") else subject
+            object_name = obj.name if hasattr(obj, "name") else obj
 
-            relations.append(Relation(
-                subject=subject_name,
-                object=object_name,
-                predicate=rel.label
-            ))
+            relations.append(
+                Relation(subject=subject_name, object=object_name, predicate=rel.label)
+            )
 
         return relations
 
     def _normalize_name(self, name: str) -> str:
         """标准化实体名称（去除空格、标点等）"""
-        return name.strip().replace(' ', '').replace('\t', '').replace('\n', '')
+        return name.strip().replace(" ", "").replace("\t", "").replace("\n", "")
 
-    def _match_relation(self, predicted: Relation, ground_truth: Set[Relation]) -> Tuple[bool, bool]:
+    def _match_relation(
+        self, predicted: Relation, ground_truth: Set[Relation]
+    ) -> Tuple[bool, bool]:
         """
         匹配预测关系与真实关系
 
@@ -177,12 +182,27 @@ class RelationEvaluator:
             gt_predicate = gt_rel.predicate
 
             # 检查实体和关系类型是否匹配
-            if (pred_subject_norm == gt_subject_norm or pred_subject_norm in gt_subject_norm or gt_subject_norm in pred_subject_norm) and \
-               (pred_object_norm == gt_object_norm or pred_object_norm in gt_object_norm or gt_object_norm in pred_object_norm) and \
-               (pred_predicate == gt_predicate or pred_predicate in gt_predicate or gt_predicate in pred_predicate):
-
+            if (
+                (
+                    pred_subject_norm == gt_subject_norm
+                    or pred_subject_norm in gt_subject_norm
+                    or gt_subject_norm in pred_subject_norm
+                )
+                and (
+                    pred_object_norm == gt_object_norm
+                    or pred_object_norm in gt_object_norm
+                    or gt_object_norm in pred_object_norm
+                )
+                and (
+                    pred_predicate == gt_predicate
+                    or pred_predicate in gt_predicate
+                    or gt_predicate in pred_predicate
+                )
+            ):
                 # 检查方向是否正确
-                direction_correct = (pred_subject_norm == gt_subject_norm and pred_object_norm == gt_object_norm)
+                direction_correct = (
+                    pred_subject_norm == gt_subject_norm and pred_object_norm == gt_object_norm
+                )
                 return (True, direction_correct)
 
         return (False, False)
@@ -203,7 +223,7 @@ class RelationEvaluator:
         print(f"开始评估，共 {len(self.dataset)} 条数据...")
 
         for idx, item in enumerate(tqdm(self.dataset, desc="Evaluating")):
-            text = item.get('text', '')
+            text = item.get("text", "")
             if not text:
                 continue
 
@@ -243,70 +263,80 @@ class RelationEvaluator:
                         true_positive += 1
                         if is_dir_correct:
                             direction_correct += 1
-                            correct_relations.append({
-                                "subject": pred_rel.subject,
-                                "object": pred_rel.object,
-                                "predicate": pred_rel.predicate,
-                                "direction_correct": True
-                            })
+                            correct_relations.append(
+                                {
+                                    "subject": pred_rel.subject,
+                                    "object": pred_rel.object,
+                                    "predicate": pred_rel.predicate,
+                                    "direction_correct": True,
+                                }
+                            )
                         else:
-                            correct_relations.append({
-                                "subject": pred_rel.subject,
-                                "object": pred_rel.object,
-                                "predicate": pred_rel.predicate,
-                                "direction_correct": False
-                            })
+                            correct_relations.append(
+                                {
+                                    "subject": pred_rel.subject,
+                                    "object": pred_rel.object,
+                                    "predicate": pred_rel.predicate,
+                                    "direction_correct": False,
+                                }
+                            )
                         break
 
                 if not matched:
-                    wrong_relations.append({
-                        "subject": pred_rel.subject,
-                        "object": pred_rel.object,
-                        "predicate": pred_rel.predicate
-                    })
+                    wrong_relations.append(
+                        {
+                            "subject": pred_rel.subject,
+                            "object": pred_rel.object,
+                            "predicate": pred_rel.predicate,
+                        }
+                    )
 
             # 找出未被提取的真实关系
             for gt_rel in gt_relations:
                 gt_key = (gt_rel.subject, gt_rel.object, gt_rel.predicate)
                 if gt_key not in matched_gt_keys:
-                    missed_relations.append({
-                        "subject": gt_rel.subject,
-                        "object": gt_rel.object,
-                        "predicate": gt_rel.predicate
-                    })
+                    missed_relations.append(
+                        {
+                            "subject": gt_rel.subject,
+                            "object": gt_rel.object,
+                            "predicate": gt_rel.predicate,
+                        }
+                    )
 
             total_ground_truth += len(gt_relations)
             total_extracted += len(unique_pred_relations)
 
             # 保存每条数据的详细信息
-            details.append({
-                "index": idx,
-                "text": text[:100] + "..." if len(text) > 100 else text,
-                "ground_truth_relations": [
-                    {"subject": r.subject, "object": r.object, "predicate": r.predicate}
-                    for r in gt_relations
-                ],
-                "extracted_relations": [
-                    {"subject": r.subject, "object": r.object, "predicate": r.predicate}
-                    for r in pred_relations
-                ],
-                "extracted_relations_unique": [
-                    {"subject": r.subject, "object": r.object, "predicate": r.predicate}
-                    for r in unique_pred_relations
-                ],
-                "correct_relations": correct_relations,
-                "wrong_relations": wrong_relations,
-                "missed_relations": missed_relations,
-                "stats": {
-                    "ground_truth_count": len(gt_relations),
-                    "extracted_count": len(pred_relations),
-                    "extracted_unique_count": len(unique_pred_relations),
-                    "correct_count": len(correct_relations),
-                    "wrong_count": len(wrong_relations),
-                    "missed_count": len(missed_relations),
-                    "direction_correct_count": direction_correct
+            details.append(
+                {
+                    "index": idx,
+                    "text": text[:100] + "..." if len(text) > 100 else text,
+                    "ground_truth_relations": [
+                        {"subject": r.subject, "object": r.object, "predicate": r.predicate}
+                        for r in gt_relations
+                    ],
+                    "extracted_relations": [
+                        {"subject": r.subject, "object": r.object, "predicate": r.predicate}
+                        for r in pred_relations
+                    ],
+                    "extracted_relations_unique": [
+                        {"subject": r.subject, "object": r.object, "predicate": r.predicate}
+                        for r in unique_pred_relations
+                    ],
+                    "correct_relations": correct_relations,
+                    "wrong_relations": wrong_relations,
+                    "missed_relations": missed_relations,
+                    "stats": {
+                        "ground_truth_count": len(gt_relations),
+                        "extracted_count": len(pred_relations),
+                        "extracted_unique_count": len(unique_pred_relations),
+                        "correct_count": len(correct_relations),
+                        "wrong_count": len(wrong_relations),
+                        "missed_count": len(missed_relations),
+                        "direction_correct_count": direction_correct,
+                    },
                 }
-            })
+            )
 
         # 计算指标
         # 准确率 = 正确关系数 / 总提取关系数（去重后）
@@ -327,7 +357,7 @@ class RelationEvaluator:
             total_extracted=total_extracted,
             true_positive=true_positive,
             direction_correct=direction_correct,
-            details=details
+            details=details,
         )
 
     def print_results(self, metrics: RelationEvaluationMetrics):
@@ -369,19 +399,19 @@ class RelationEvaluator:
                 "total_ground_truth": metrics.total_ground_truth,
                 "total_extracted": metrics.total_extracted,
                 "true_positive": metrics.true_positive,
-                "direction_correct": metrics.direction_correct
+                "direction_correct": metrics.direction_correct,
             },
             "token_usage": token_summary,
             "dataset_size": len(self.dataset),
-            "details": metrics.details
+            "details": metrics.details,
         }
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
 
         # 同时保存一个可读的文本格式结果
         text_output_path = output_path.parent / "relation_quality_eval.txt"
-        with open(text_output_path, 'w', encoding='utf-8') as f:
+        with open(text_output_path, "w", encoding="utf-8") as f:
             f.write("=" * 60 + "\n")
             f.write("关系质量评估详细结果\n")
             f.write("=" * 60 + "\n\n")
@@ -412,30 +442,34 @@ class RelationEvaluator:
 
             for detail in metrics.details:
                 f.write(f"[{detail['index']}] {detail['text']}\n")
-                f.write(f"  统计: 真实={detail['stats']['ground_truth_count']}, "
-                       f"提取={detail['stats']['extracted_count']}, "
-                       f"去重提取={detail['stats']['extracted_unique_count']}, "
-                       f"正确={detail['stats']['correct_count']}, "
-                       f"错误={detail['stats']['wrong_count']}, "
-                       f"遗漏={detail['stats']['missed_count']}\n")
+                f.write(
+                    f"  统计: 真实={detail['stats']['ground_truth_count']}, "
+                    f"提取={detail['stats']['extracted_count']}, "
+                    f"去重提取={detail['stats']['extracted_unique_count']}, "
+                    f"正确={detail['stats']['correct_count']}, "
+                    f"错误={detail['stats']['wrong_count']}, "
+                    f"遗漏={detail['stats']['missed_count']}\n"
+                )
 
                 # 正确提取的关系
-                if detail['correct_relations']:
+                if detail["correct_relations"]:
                     f.write(f"  ✓ 正确提取:\n")
-                    for r in detail['correct_relations']:
-                        dir_str = "→" if r['direction_correct'] else "←"
-                        f.write(f"      {dir_str} {r['subject']} | {r['predicate']} | {r['object']}\n")
+                    for r in detail["correct_relations"]:
+                        dir_str = "→" if r["direction_correct"] else "←"
+                        f.write(
+                            f"      {dir_str} {r['subject']} | {r['predicate']} | {r['object']}\n"
+                        )
 
                 # 错误提取的关系
-                if detail['wrong_relations']:
+                if detail["wrong_relations"]:
                     f.write(f"  ✗ 错误提取:\n")
-                    for r in detail['wrong_relations']:
+                    for r in detail["wrong_relations"]:
                         f.write(f"      ✗ {r['subject']} | {r['predicate']} | {r['object']}\n")
 
                 # 遗漏的关系
-                if detail['missed_relations']:
+                if detail["missed_relations"]:
                     f.write(f"  ⊗ 遗漏关系:\n")
-                    for r in detail['missed_relations']:
+                    for r in detail["missed_relations"]:
                         f.write(f"      ⊗ {r['subject']} | {r['predicate']} | {r['object']}\n")
 
                 f.write("\n")
@@ -451,10 +485,7 @@ def main():
 
     # 创建评估器，使用项目配置的 llm 和 embeddings
     evaluator = RelationEvaluator(
-        llm=llm,
-        embeddings=embeddings,
-        dataset_path=str(dataset_path),
-        max_samples=MAX_SAMPLES
+        llm=llm, embeddings=embeddings, dataset_path=str(dataset_path), max_samples=MAX_SAMPLES
     )
 
     # 执行评估

@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from models import Entity, Relation
+from disk_kg.models import Entity, Relation
 
 
 class Merger:
@@ -69,7 +69,7 @@ class Merger:
                 name=e1.name,  # 或者合并名字
                 label=e1.label,
                 embedding=emb1[idx1].tolist(),
-                description=e1.description if hasattr(e1, 'description') else "",
+                description=e1.description if hasattr(e1, "description") else "",
             )
 
             entity_name_map[e1.name] = merged_entity
@@ -120,7 +120,7 @@ class Merger:
                 label=rel.label,
                 name=rel.name,
                 embedding=rel.embedding,
-                description=rel.description if hasattr(rel, 'description') else "",
+                description=rel.description if hasattr(rel, "description") else "",
             )
             relations.append(updated_relation)
 
@@ -133,7 +133,7 @@ class Merger:
                 label=rel.label,
                 name=rel.name,
                 embedding=rel.embedding,
-                description=rel.description if hasattr(rel, 'description') else "",
+                description=rel.description if hasattr(rel, "description") else "",
             )
             relations.append(updated_relation)
 

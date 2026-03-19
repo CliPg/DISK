@@ -1,6 +1,6 @@
 [project]
 name = "disk-kg"
-version = "1.0.0"
+version = "1.1.0"
 description = "DISK (Domain Incremental conStruction of Knowledge graph) - A tool for distilling text from documents, extracting entities and relations, and building domain knowledge graphs"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -49,6 +49,9 @@ dev = [
     "jupyter>=1.0.0",
 ]
 
+[project.scripts]
+disk-mcp = "disk_kg.mcp:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -79,5 +82,4 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["config", "distiller", "eval", "extractor", "manager", "merger", "models", "utils"]
-include = ["disk.py"]
+packages = ["src/disk_kg"]

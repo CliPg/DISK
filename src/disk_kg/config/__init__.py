@@ -1,3 +1,3 @@
-from config.llm import embeddings, llm
+from .llm import embeddings, llm
 
 __all__ = ["llm", "embeddings"]

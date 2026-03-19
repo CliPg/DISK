@@ -1,6 +1,6 @@
-#--------------------#
+# --------------------#
 # extraction prompts #
-#--------------------#
+# --------------------#
 
 # Language detection
 from .lang_detect import detect_document_language
@@ -16,25 +16,25 @@ def get_prompts(language=None):
     Returns:
         dict: Dictionary containing prompt strings for the specified language
     """
-    if language == 'zh':
+    if language == "zh":
         return {
-            'extract_entities': EXTRACT_ENTITIES_PROMPT_ZH,
-            'extract_relations': EXTRACT_RELATIONS_PROMPT_ZH,
-            'extract': EXTRACT_PROMPT_ZH,
-            'extract_entities_and_relations': EXTRACT_ENTITIES_AND_RELATIONS_PROMPT_ZH,
+            "extract_entities": EXTRACT_ENTITIES_PROMPT_ZH,
+            "extract_relations": EXTRACT_RELATIONS_PROMPT_ZH,
+            "extract": EXTRACT_PROMPT_ZH,
+            "extract_entities_and_relations": EXTRACT_ENTITIES_AND_RELATIONS_PROMPT_ZH,
         }
     else:
         return {
-            'extract_entities': EXTRACT_ENTITIES_PROMPT,
-            'extract_relations': EXTRACT_RELATIONS_PROMPT,
-            'extract': EXTRACT_PROMPT,
-            'extract_entities_and_relations': EXTRACT_ENTITIES_AND_RELATIONS_PROMPT,
+            "extract_entities": EXTRACT_ENTITIES_PROMPT,
+            "extract_relations": EXTRACT_RELATIONS_PROMPT,
+            "extract": EXTRACT_PROMPT,
+            "extract_entities_and_relations": EXTRACT_ENTITIES_AND_RELATIONS_PROMPT,
         }
 
 
-#--------------------#
+# --------------------#
 # English prompts #
-#--------------------#
+# --------------------#
 
 # Prompt for extracting entities from text
 EXTRACT_ENTITIES_PROMPT = """
@@ -168,9 +168,9 @@ Text:
 """
 
 
-#--------------------#
+# --------------------#
 # Chinese prompts #
-#--------------------#
+# --------------------#
 
 # 提取实体的中文提示词
 EXTRACT_ENTITIES_PROMPT_ZH = """

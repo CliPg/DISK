@@ -1,4 +1,4 @@
-from models import KnowledgeGraph
+from disk_kg.models import KnowledgeGraph
 
 
 class KGManager:

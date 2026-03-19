@@ -7,8 +7,7 @@
         "/PATH/TO/DISK",
         "run",
         "--no-dev",
-        "python",
-        "mcp_server.py"
+        "disk-mcp"
       ],
       "env": {
         "DISK_CONFIG_PATH": "C:/Users/wujun/Desktop/DISK/config.toml"
@@ -16,7 +15,7 @@
     },
     "disk-kg-uvx": {
       "command": "uvx",
-      "args": ["--from", "disk-kg", "python", "-m", "mcp_server"],
+      "args": ["--from", "disk-kg", "disk-mcp"],
       "env": {
         "DISK_CONFIG_PATH": "/path/to/your/config.toml"
       }

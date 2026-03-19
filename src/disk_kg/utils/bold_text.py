@@ -1,5 +1,6 @@
 import re
 
+
 def bold_entities_in_text(text: str, entities: dict) -> str:
     """
     在文本中将命中的实体名称加粗（Markdown 格式）。

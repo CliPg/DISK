@@ -1,14 +1,14 @@
-from utils.parser import Parser
-from utils.schemas import EntitiesSchema
-from utils.prompts import EXTRACT_ENTITIES_PROMPT
-from utils.prompts import get_prompts
-from utils.lang_detect import detect_document_language
-from models import Entity, Relation, KnowledgeGraph
 import json
 import os
 
-class EntitiesExtractor:
+from disk_kg.models import Entity, KnowledgeGraph, Relation
+from disk_kg.utils.lang_detect import detect_document_language
+from disk_kg.utils.parser import Parser
+from disk_kg.utils.prompts import EXTRACT_ENTITIES_PROMPT, get_prompts
+from disk_kg.utils.schemas import EntitiesSchema
 
+
+class EntitiesExtractor:
     def __init__(self, llm, embeddings, language: str = None, token_callback=None):
         """
         Args:
@@ -21,10 +21,12 @@ class EntitiesExtractor:
         self.language = language
         self.prompts = get_prompts(language)
         # Set results directory to project root/results
-        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
+        self.results_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results"
+        )
         os.makedirs(self.results_dir, exist_ok=True)
 
-    def extract_entities(self, text:str, pdf_path: str = None) -> list[Entity] | None:
+    def extract_entities(self, text: str, pdf_path: str = None) -> list[Entity] | None:
         """
         Extract entities from the given text.
 
@@ -42,9 +44,7 @@ class EntitiesExtractor:
 
         try:
             entities = self.parser.extract_information_as_json_from_text(
-                text=text,
-                output_structure=EntitiesSchema,
-                prompt=self.prompts['extract_entities']
+                text=text, output_structure=EntitiesSchema, prompt=self.prompts["extract_entities"]
             )
         except Exception as e:
             print(f"Error during entity extraction: {e}")
@@ -53,16 +53,18 @@ class EntitiesExtractor:
         if not entities or "entities" not in entities or len(entities["entities"]) == 0:
             print("No entities found in the text.")
             return None
-                
+
         embedded_entities = self.embed_entities(entities)
 
-        with open(os.path.join(self.results_dir, "extracted_entities.json"), "a", encoding="utf-8") as f:
+        with open(
+            os.path.join(self.results_dir, "extracted_entities.json"), "a", encoding="utf-8"
+        ) as f:
             json.dump(entities, f, ensure_ascii=False)
             f.write("\n")
 
         return embedded_entities
-    
-    def embed_entities(self, entities:EntitiesSchema) -> list[Entity]:
+
+    def embed_entities(self, entities: EntitiesSchema) -> list[Entity]:
         """
         Generate embeddings for the extracted entities.
 
@@ -83,10 +85,8 @@ class EntitiesExtractor:
                 label=entity["label"],
                 name=entity["name"],
                 embedding=embedding,
-                description=entity.get("description", "")
+                description=entity.get("description", ""),
             )
             embedded_entities.append(embedded_entity)
 
         return embedded_entities
-    
-    

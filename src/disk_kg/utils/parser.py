@@ -1,6 +1,7 @@
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 
+
 class Parser:
     def __init__(self, llm, embeddings, token_callback=None):
         """
@@ -15,7 +16,9 @@ class Parser:
         self.embeddings = embeddings
         self.token_callback = token_callback
 
-    def extract_information_as_json_from_text(self, text: str, output_structure, prompt: str) -> str:
+    def extract_information_as_json_from_text(
+        self, text: str, output_structure, prompt: str
+    ) -> str:
         """
         Extract structured information in JSON format from the given text using the provided prompt.
 
@@ -38,8 +41,7 @@ class Parser:
         """
 
         prompt_template = PromptTemplate(
-            template=template,
-            input_variables=["text", "prompt", "format_instructions"]
+            template=template, input_variables=["text", "prompt", "format_instructions"]
         )
 
         chain = prompt_template | self.llm | parser
@@ -48,12 +50,13 @@ class Parser:
         invoke_args = {
             "text": text,
             "prompt": prompt,
-            "format_instructions": parser.get_format_instructions()
+            "format_instructions": parser.get_format_instructions(),
         }
 
         # 如果有回调，通过config传递
         if self.token_callback:
             from langchain_core.runnables import RunnableConfig
+
             config = RunnableConfig(callbacks=[self.token_callback])
             print(f"[DEBUG] Invoking chain with token_callback: {self.token_callback}")
             extracted_information = chain.invoke(invoke_args, config=config)

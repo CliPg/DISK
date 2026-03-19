@@ -2,18 +2,26 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import local, Lock
+from threading import Lock, local
 from typing import Literal
 
 from tqdm import tqdm
 
-from distiller import PDFDistiller
-from extractor import EntitiesExtractor, Extractor, RelationsExtractor
-from manager import KGManager
-from merger import Merger
-from models import KnowledgeGraph
-from models.neo4j_connector import Neo4jConnector
-from utils import load_checkpoint, save_checkpoint
+from .distiller import PDFDistiller
+from .extractor import EntitiesExtractor, Extractor, RelationsExtractor
+from .manager import KGManager
+from .merger import Merger
+from .models import KnowledgeGraph
+from .models.neo4j_connector import Neo4jConnector
+from .utils import (
+    TokenTracker,
+    TokenTrackingCallbackHandler,
+    estimate_tokens,
+    load_checkpoint,
+    save_checkpoint,
+)
+from .utils.lang_detect import detect_document_language
+from .utils.prompts import get_prompts
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +71,21 @@ class RateLimiter:
 def _get_local_extractor(llm, embeddings, language: str = None, token_callback=None):
     """获取当前线程的 Extractor 实例."""
     if not hasattr(_thread_local, "extractor"):
-        _thread_local.extractor = Extractor(llm=llm, embeddings=embeddings, language=language, token_callback=token_callback)
+        _thread_local.extractor = Extractor(
+            llm=llm, embeddings=embeddings, language=language, token_callback=token_callback
+        )
     return _thread_local.extractor
 
 
-def _extract_with_local_extractor(text, llm, embeddings, rate_limiter: RateLimiter | None = None, pdf_path: str = None, language: str = None, token_callback=None):
+def _extract_with_local_extractor(
+    text,
+    llm,
+    embeddings,
+    rate_limiter: RateLimiter | None = None,
+    pdf_path: str = None,
+    language: str = None,
+    token_callback=None,
+):
     """在线程池中执行的提取函数."""
     if rate_limiter is not None:
         rate_limiter.wait_if_needed()
@@ -100,7 +118,6 @@ class DISK:
             enable_token_tracking: 是否启用token使用跟踪
             model_name: 模型名称，用于成本估算
         """
-        from utils import TokenTracker, TokenTrackingCallbackHandler, estimate_tokens
 
         self.distiller = PDFDistiller()
         self.language = language
@@ -108,13 +125,23 @@ class DISK:
         # Token跟踪
         self.enable_token_tracking = enable_token_tracking
         self.model_name = model_name or self._extract_model_name(llm)
-        self.token_tracker = TokenTracker(model_name=self.model_name) if enable_token_tracking else None
-        self.token_callback = TokenTrackingCallbackHandler(self.token_tracker) if enable_token_tracking else None
+        self.token_tracker = (
+            TokenTracker(model_name=self.model_name) if enable_token_tracking else None
+        )
+        self.token_callback = (
+            TokenTrackingCallbackHandler(self.token_tracker) if enable_token_tracking else None
+        )
 
         # 使用原始LLM（不包装），通过回调跟踪token
-        self.entities_extractor = EntitiesExtractor(llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback)
-        self.relations_extractor = RelationsExtractor(llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback)
-        self.extractor = Extractor(llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback)
+        self.entities_extractor = EntitiesExtractor(
+            llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback
+        )
+        self.relations_extractor = RelationsExtractor(
+            llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback
+        )
+        self.extractor = Extractor(
+            llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback
+        )
         self.kg_manager = KGManager(kg=kg)
         self.merger = Merger()
         self.llm = llm
@@ -204,9 +231,9 @@ class DISK:
 
         # Auto-detect language if not set
         if self.language is None and texts:
-            from utils.lang_detect import detect_document_language
-            from utils.prompts import get_prompts
-            detected_lang = detect_document_language(file_path=pdf_path, text_content=texts[0][:500] if texts else "")
+            detected_lang = detect_document_language(
+                file_path=pdf_path, text_content=texts[0][:500] if texts else ""
+            )
             logger.info(f"Detected document language: {detected_lang}")
             # Update extractors with detected language
             prompts = get_prompts(detected_lang)
@@ -243,7 +270,14 @@ class DISK:
             # 提交所有任务，传入 rate_limiter, pdf_path, language 和 token_callback
             futures = {
                 executor.submit(
-                    _extract_with_local_extractor, text, self.llm, self.embeddings, self.rate_limiter, self.current_pdf_path, self.language, self.token_callback
+                    _extract_with_local_extractor,
+                    text,
+                    self.llm,
+                    self.embeddings,
+                    self.rate_limiter,
+                    self.current_pdf_path,
+                    self.language,
+                    self.token_callback,
                 ): i
                 for i, text in enumerate(texts)
             }
@@ -274,7 +308,9 @@ class DISK:
 
         for text in tqdm(texts, desc="Extracting entities and relations (serial)"):
             try:
-                result = self.extractor.extract_relations_and_entities(text, pdf_path=self.current_pdf_path)
+                result = self.extractor.extract_relations_and_entities(
+                    text, pdf_path=self.current_pdf_path
+                )
                 results.append(result)
             except Exception as e:
                 logger.error(f"Error processing text block: {e}")
@@ -309,7 +345,9 @@ class DISK:
         round_num = 0
         while len(blocks) > 1:
             round_num += 1
-            logger.info(f"Merge round {round_num}: {len(blocks)} blocks -> {(len(blocks) + 1) // 2} blocks")
+            logger.info(
+                f"Merge round {round_num}: {len(blocks)} blocks -> {(len(blocks) + 1) // 2} blocks"
+            )
 
             # 将块两两分组
             pairs = []
@@ -388,7 +426,9 @@ class DISK:
                 entities2=entities2,
                 relations2=relations2,
             )
-            logger.debug(f"Round {round_num}, pair {pair_idx}: merged {len(entities1)}+{len(entities2)} entities -> {len(merged_entities)} entities")
+            logger.debug(
+                f"Round {round_num}, pair {pair_idx}: merged {len(entities1)}+{len(entities2)} entities -> {len(merged_entities)} entities"
+            )
             return (merged_relations, merged_entities, pair_idx)
         except Exception as e:
             logger.error(f"Error in round {round_num}, pair {pair_idx}: {e}")
@@ -434,11 +474,11 @@ class DISK:
     def _extract_model_name(self, llm) -> str:
         """从LLM对象中提取模型名称"""
         # 尝试从不同LLM类型中提取模型名
-        if hasattr(llm, 'model'):
+        if hasattr(llm, "model"):
             return str(llm.model)
-        elif hasattr(llm, 'model_name'):
+        elif hasattr(llm, "model_name"):
             return str(llm.model_name)
-        elif hasattr(llm, '_llm_type'):
+        elif hasattr(llm, "_llm_type"):
             return str(llm._llm_type)
         else:
             return "unknown"

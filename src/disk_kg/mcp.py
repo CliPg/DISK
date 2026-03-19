@@ -4,6 +4,8 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from disk_kg.models import Entity, Relation
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mcp_disk_server")
@@ -22,9 +24,9 @@ if not os.path.exists(CONFIG_PATH):
     CONFIG_EXISTS = False
 else:
     # If using custom path, update the config module's path
-    import config.llm
+    import disk_kg.config.llm
 
-    config.llm.CONFIG_PATH = CONFIG_PATH
+    disk_kg.config.llm.CONFIG_PATH = CONFIG_PATH
     CONFIG_EXISTS = True
 
 # Initialize FastMCP
@@ -39,8 +41,8 @@ def get_disk():
     if not CONFIG_EXISTS:
         raise FileNotFoundError("config.toml not found. Please create it from config.example.toml.")
     if _disk_instance is None:
-        from config.llm import embeddings, llm
-        from disk import DISK
+        from disk_kg import DISK
+        from disk_kg.config.llm import embeddings, llm
 
         _disk_instance = DISK(llm=llm, embeddings=embeddings)
     return _disk_instance
@@ -121,7 +123,6 @@ def merge_knowledge_fragments(
         # or we might need a helper to reconstruct models.
 
         # Simple reconstruction (this might need refinement based on models/__init__.py)
-        from models import Entity, Relation
 
         def dict_to_entity(d):
             if isinstance(d, dict):
@@ -197,5 +198,9 @@ def build_full_knowledge_graph(file_path: str, mode: str = "parallel") -> dict[s
         return {"error": str(e)}
 
 
-if __name__ == "__main__":
+def main():
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,17 +1,27 @@
-from utils.parser import Parser
-from utils.schemas import RelationsSchema, EntitiesSchema, EntitySchema
-from utils.prompts import EXTRACT_PROMPT
-from utils.prompts import get_prompts
-from utils.lang_detect import detect_document_language
-from models import Relation, Entity
-from typing import List, Tuple
 import json
-import numpy as np
 import os
+from typing import List, Tuple
+
+import numpy as np
+
+from disk_kg.models import Entity, Relation
+from disk_kg.utils.lang_detect import detect_document_language
+from disk_kg.utils.parser import Parser
+from disk_kg.utils.prompts import EXTRACT_PROMPT, get_prompts
+from disk_kg.utils.schemas import EntitiesSchema, EntitySchema, RelationsSchema
+
 
 class Extractor:
-
-    def __init__(self, llm, embeddings, entity_label_weight:float=0.0, entity_name_weight:float=0.3, entity_description_weight:float=0.7, language: str = None, token_callback=None):
+    def __init__(
+        self,
+        llm,
+        embeddings,
+        entity_label_weight: float = 0.0,
+        entity_name_weight: float = 0.3,
+        entity_description_weight: float = 0.7,
+        language: str = None,
+        token_callback=None,
+    ):
         """
         Args:
             llm: Language model instance
@@ -28,13 +38,17 @@ class Extractor:
         self.entity_description_weight = entity_description_weight
         self.language = language
         self.prompts = get_prompts(language)
-        self.entity_cache = {} # save entity embeddings
+        self.entity_cache = {}  # save entity embeddings
         self.token_callback = token_callback
         # Set results directory to project root/results
-        self.results_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
+        self.results_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results"
+        )
         os.makedirs(self.results_dir, exist_ok=True)
 
-    def extract_relations_and_entities(self, text:str, pdf_path: str = None) -> Tuple[List[Relation], List[Entity]] | None:
+    def extract_relations_and_entities(
+        self, text: str, pdf_path: str = None
+    ) -> Tuple[List[Relation], List[Entity]] | None:
         """
         Extract relations from the given text.
 
@@ -53,9 +67,7 @@ class Extractor:
         try:
             print("Calling llm...")
             relations = self.parser.extract_information_as_json_from_text(
-                text=text,
-                output_structure=RelationsSchema,
-                prompt=self.prompts['extract']
+                text=text, output_structure=RelationsSchema, prompt=self.prompts["extract"]
             )
         except Exception as e:
             print(f"Error during relation extraction: {e}")
@@ -71,23 +83,27 @@ class Extractor:
         embedded_relations = self.embed_relations(relations)
         embedded_entities = self.embed_entities(entities)
 
-        with open(os.path.join(self.results_dir, "extracted_relations.json"), "a", encoding="utf-8") as f:
+        with open(
+            os.path.join(self.results_dir, "extracted_relations.json"), "a", encoding="utf-8"
+        ) as f:
             json.dump(relations, f, ensure_ascii=False)
             f.write("\n")
 
-        with open(os.path.join(self.results_dir, "extracted_entities.json"), "a", encoding="utf-8") as f:
+        with open(
+            os.path.join(self.results_dir, "extracted_entities.json"), "a", encoding="utf-8"
+        ) as f:
             json.dump(entities, f, ensure_ascii=False)
             f.write("\n")
 
         return embedded_relations, embedded_entities
 
-    def extract_entities(self, relations:RelationsSchema) -> list[Entity]:
+    def extract_entities(self, relations: RelationsSchema) -> list[Entity]:
         """
         Extract entities from the given relations.
 
         Args:
             relations (Relations): The extracted relations.
-        
+
         Returns:
             Entities: The extracted entities structured as per the Entities schema.
         """
@@ -102,9 +118,8 @@ class Extractor:
                 entities.append(end_entity)
 
         return {"entities": entities}
-            
 
-    def embed_relations(self, relations:RelationsSchema) -> list[Relation]:
+    def embed_relations(self, relations: RelationsSchema) -> list[Relation]:
         """
         Generate embeddings for the extracted relations.
 
@@ -133,13 +148,13 @@ class Extractor:
                 label=relation["label"],
                 name=relation["name"],
                 embedding=embedding,
-                description=relation.get("description", "")
+                description=relation.get("description", ""),
             )
             embedded_relations.append(embedded_relation)
 
         return embedded_relations
-    
-    def embed_entities(self, entities:EntitiesSchema) -> list[Entity]:
+
+    def embed_entities(self, entities: EntitiesSchema) -> list[Entity]:
         """
         Generate embeddings for the extracted entities.
 
@@ -163,14 +178,14 @@ class Extractor:
             embedded_entities.append(embedded_entity)
 
         return embedded_entities
-    
-    def embed_entity(self, entity:EntitySchema) -> Entity:
+
+    def embed_entity(self, entity: EntitySchema) -> Entity:
         """
         Generate embedding for a single entity.
 
         Args:
             entity (Entity): The entity to be embedded.
-        
+
         Returns:
             Entity: The entity with its embedding.
         """
@@ -185,14 +200,18 @@ class Extractor:
         label_embedding = self.parser.embeddings.embed_query(entity["label"])
         description_embedding = self.parser.embeddings.embed_query(entity.get("description", ""))
 
-        embedding = self.entity_name_weight * np.array(name_embedding) + self.entity_label_weight * np.array(label_embedding) + self.entity_description_weight * np.array(description_embedding)
+        embedding = (
+            self.entity_name_weight * np.array(name_embedding)
+            + self.entity_label_weight * np.array(label_embedding)
+            + self.entity_description_weight * np.array(description_embedding)
+        )
         embedding = embedding.tolist()
 
         embedded_entity = Entity(
             label=entity["label"],
             name=entity["name"],
             embedding=embedding,
-            description=entity.get("description", "")
+            description=entity.get("description", ""),
         )
 
         self.entity_cache[key] = embedded_entity

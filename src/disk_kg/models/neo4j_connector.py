@@ -1,10 +1,13 @@
 from neo4j import GraphDatabase
+
 from .knowledge_graph import Entity, Relation
+
 
 class Neo4jConnector:
     """
     A class to connect to a Neo4j database and run queries.
     """
+
     def __init__(self, uri, user, password, graph_id: str = None):
         """
         Initializes the Neo4jConnector with the given URI, username, and password.
@@ -15,7 +18,9 @@ class Neo4jConnector:
             password: Neo4j password
             graph_id: Knowledge graph ID for data isolation
         """
-        self.driver = GraphDatabase.driver(uri, auth=(user, password), max_connection_lifetime=30, connection_timeout=10)
+        self.driver = GraphDatabase.driver(
+            uri, auth=(user, password), max_connection_lifetime=30, connection_timeout=10
+        )
         self.graph_id = graph_id
         self._verify_connectivity()
 
@@ -39,7 +44,7 @@ class Neo4jConnector:
             result = session.run(query, parameters)
             return result.data()
 
-    def create_entities(self, entities:list[Entity]):
+    def create_entities(self, entities: list[Entity]):
         """
         Creates nodes in the Neo4j database for each entity in the list.
         Each node will be tagged with graph_id for data isolation.
@@ -61,12 +66,16 @@ class Neo4jConnector:
                 match_props = "name: $name"
 
             query = f"MERGE (n:`{label}` {{{match_props}}}) SET {set_clause} RETURN n"
-            parameters = {"name": entity.name, "embedding": entity.embedding, "description": entity.description if hasattr(entity, 'description') else ""}
+            parameters = {
+                "name": entity.name,
+                "embedding": entity.embedding,
+                "description": entity.description if hasattr(entity, "description") else "",
+            }
             if self.graph_id:
                 parameters["graph_id"] = self.graph_id
             self.run_query(query, parameters)
 
-    def create_relations(self, relations:list[Relation]):
+    def create_relations(self, relations: list[Relation]):
         """
         Creates relationships in the Neo4j database for each relation in the list.
         Each relationship will be tagged with graph_id for data isolation.
@@ -102,7 +111,7 @@ class Neo4jConnector:
                 "end_name": relation.end_entity.name,
                 "name": relation.name,
                 "embedding": relation.embedding,
-                "description": relation.description if hasattr(relation, 'description') else ""
+                "description": relation.description if hasattr(relation, "description") else "",
             }
             if self.graph_id:
                 parameters["graph_id"] = self.graph_id

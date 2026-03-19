@@ -10,6 +10,7 @@ from typing import Optional
 # Try to import fasttext_langdetect, fallback to regex-based detection
 try:
     from fasttext_langdetect import detect as ft_detect
+
     FASTTEXT_AVAILABLE = True
 except ImportError:
     FASTTEXT_AVAILABLE = False
@@ -31,11 +32,11 @@ def detect_with_fasttext(text: str) -> Optional[str]:
     try:
         result = ft_detect(text[:1000])  # Sample first 1000 chars
         if result and len(result) > 0:
-            lang = result[0].get('lang', '') if isinstance(result[0], dict) else str(result[0])
-            if lang.startswith('zh'):
-                return 'zh'
-            elif lang.startswith('en'):
-                return 'en'
+            lang = result[0].get("lang", "") if isinstance(result[0], dict) else str(result[0])
+            if lang.startswith("zh"):
+                return "zh"
+            elif lang.startswith("en"):
+                return "en"
     except Exception:
         pass
 
@@ -53,21 +54,18 @@ def detect_from_filename(filename: str) -> Optional[str]:
         'zh' for Chinese, 'en' for English, or None if undetermined
     """
     # Check for Chinese characters in filename
-    if re.search(r'[\u4e00-\u9fa5]', filename):
-        return 'zh'
+    if re.search(r"[\u4e00-\u9fa5]", filename):
+        return "zh"
 
     # Check for common Chinese filename patterns
-    chinese_keywords = [
-        '中文', '文档', '报告', '论文', '章节', '附录',
-        'chinese', 'zhongwen', 'zh'
-    ]
+    chinese_keywords = ["中文", "文档", "报告", "论文", "章节", "附录", "chinese", "zhongwen", "zh"]
     filename_lower = filename.lower()
     for keyword in chinese_keywords:
         if keyword in filename_lower:
-            return 'zh'
+            return "zh"
 
     # Default to English if no Chinese detected
-    return 'en'
+    return "en"
 
 
 def detect_from_text(text: str, sample_size: int = 500) -> Optional[str]:
@@ -94,10 +92,10 @@ def detect_from_text(text: str, sample_size: int = 500) -> Optional[str]:
     sample = text[:sample_size] if len(text) > sample_size else text
 
     # Count Chinese characters
-    chinese_chars = len(re.findall(r'[\u4e00-\u9fa5]', sample))
+    chinese_chars = len(re.findall(r"[\u4e00-\u9fa5]", sample))
 
     # Count English letters
-    english_chars = len(re.findall(r'[a-zA-Z]', sample))
+    english_chars = len(re.findall(r"[a-zA-Z]", sample))
 
     # Count total valid characters
     total_valid = chinese_chars + english_chars
@@ -108,16 +106,13 @@ def detect_from_text(text: str, sample_size: int = 500) -> Optional[str]:
     # If Chinese characters make up more than 20% of valid characters, consider it Chinese
     chinese_ratio = chinese_chars / total_valid
     if chinese_ratio > 0.2:
-        return 'zh'
+        return "zh"
 
-    return 'en'
+    return "en"
 
 
 def detect_document_language(
-    file_path: str = None,
-    filename: str = None,
-    text_content: str = None,
-    use_fasttext: bool = True
+    file_path: str = None, filename: str = None, text_content: str = None, use_fasttext: bool = True
 ) -> str:
     """
     Detect document language using multiple methods.
@@ -150,4 +145,4 @@ def detect_document_language(
             return lang
 
     # Default to English
-    return 'en'
+    return "en"
