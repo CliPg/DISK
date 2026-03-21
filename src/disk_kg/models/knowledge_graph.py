@@ -1,40 +1,52 @@
+from disk_kg.models.distiller import TextBlock
+
+from .connector import Connector
+
+
 class Entity:
-    def __init__(self, label: str, name: str, embedding=None, description: str = ""):
+    def __init__(
+        self,
+        label: str,
+        name: str,
+        embedding=None,
+        description: str = "",
+        source_block: TextBlock = None,
+    ):
         """
         Args:
             label (str): type of the entity
             name (str): entity name
             embedding: entity embedding vector
             description (str): detailed description of the entity in the text
+            source_block (TextBlock): the text block where this entity was extracted from
         """
         self.label = label
         self.name = name
         self.embedding = embedding
         self.description = description
+        self.source_block = source_block
 
     def to_dict(self):
         """Convert to dictionary for JSON serialization."""
-        return {
+        data = {
             "label": self.label,
             "name": self.name,
             "description": self.description,
-            # Embedding is often a numpy array or list, which might not be JSON serializable
-            # But for MCP we might want to skip it or convert it if needed.
-            # Usually users don't need the raw vector in the LLM response.
         }
+        if self.source_block:
+            data["source_block"] = self.source_block.to_dict()
+        return data
 
     def __eq__(self, other):
-        """通过 name 和 label 判断实体是否相等"""
         if not isinstance(other, Entity):
             return False
         return self.name == other.name and self.label == other.label
 
     def __hash__(self):
-        """使 Entity 可哈希，用于集合去重"""
         return hash((self.name, self.label))
 
     def __repr__(self):
-        return f"Entity(label={self.label}, name={self.name}, description={self.description})"
+        return f"Entity(label={self.label}, name={self.name})"
 
 
 class Relation:
@@ -46,6 +58,7 @@ class Relation:
         name: str,
         embedding=None,
         description: str = "",
+        source_block: TextBlock = None,
     ):
         """
         Args:
@@ -55,6 +68,7 @@ class Relation:
             name (str): relation name
             embedding: relation embedding vector
             description (str): detailed description of the relation in the text
+            source_block (TextBlock): the text block where this relation was extracted from
         """
         self.start_entity = start_entity
         self.end_entity = end_entity
@@ -62,23 +76,22 @@ class Relation:
         self.name = name
         self.embedding = embedding
         self.description = description
+        self.source_block = source_block
 
     def to_dict(self):
         """Convert to dictionary for JSON serialization."""
-        return {
-            "start_entity": self.start_entity.to_dict()
-            if hasattr(self.start_entity, "to_dict")
-            else str(self.start_entity),
-            "end_entity": self.end_entity.to_dict()
-            if hasattr(self.end_entity, "to_dict")
-            else str(self.end_entity),
+        data = {
+            "start_entity": self.start_entity.to_dict(),
+            "end_entity": self.end_entity.to_dict(),
             "label": self.label,
             "name": self.name,
             "description": self.description,
         }
+        if self.source_block:
+            data["source_block"] = self.source_block.to_dict()
+        return data
 
     def __eq__(self, other):
-        """通过起点、终点、类型和名称判断关系是否相等"""
         if not isinstance(other, Relation):
             return False
         return (
@@ -89,13 +102,31 @@ class Relation:
         )
 
     def __hash__(self):
-        """使 Relation 可哈希，用于集合去重"""
         return hash((self.start_entity.name, self.end_entity.name, self.label, self.name))
 
     def __repr__(self):
-        return f"Relation({self.start_entity.name} -[{self.label}]-> {self.end_entity.name}, description={self.description})"
+        return f"Relation({self.start_entity.name} -[{self.label}]-> {self.end_entity.name})"
 
 
 class KnowledgeGraph:
-    entities: list[Entity] = []
-    relations: list[Relation] = []
+    def __init__(self):
+        self.entities: set[Entity] = set()
+        self.relations: set[Relation] = set()
+
+    def load_from(self, connector: Connector):
+        """从存储器加载实体和关系"""
+        self.entities = set(connector.get_all_entities())
+        self.relations = set(connector.get_all_relations())
+
+    def save_to(self, connector: Connector):
+        """将当前的实体和关系保存到存储器"""
+        connector.upsert_entities(list(self.entities))
+        connector.upsert_relations(list(self.relations))
+
+    def __add__(self, other):
+        if not isinstance(other, KnowledgeGraph):
+            return NotImplemented
+        combined = KnowledgeGraph()
+        combined.entities = self.entities.union(other.entities)
+        combined.relations = self.relations.union(other.relations)
+        return combined
