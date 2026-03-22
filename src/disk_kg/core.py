@@ -1,15 +1,13 @@
 import logging
 import os
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import Lock, local
+from threading import local
 from typing import Literal
 
 from tqdm import tqdm
 
 from .distiller import PDFDistiller
 from .extractor import EntitiesExtractor, Extractor, RelationsExtractor
-from .manager import KGManager
 from .merger import Merger
 from .models import KnowledgeGraph
 from .models.neo4j_connector import Neo4jConnector
@@ -28,44 +26,6 @@ logger = logging.getLogger(__name__)
 # 线程本地存储，每个线程拥有独立的 Extractor 实例
 _thread_local = local()
 
-
-class RateLimiter:
-    """速率限制器，控制 API 调用频率."""
-
-    def __init__(self, max_requests_per_second: float = 5):
-        """
-        Args:
-            max_requests_per_second: 每秒最大请求数，默认 5
-        """
-        self.max_requests_per_second = max_requests_per_second
-        self.min_interval = 1.0 / max_requests_per_second
-        self.last_call_time = 0
-        self.lock = Lock()
-
-    def acquire(self) -> float:
-        """
-        获取许可，返回需要等待的时间.
-
-        Returns:
-            需要等待的秒数
-        """
-        with self.lock:
-            current_time = time.time()
-            elapsed = current_time - self.last_call_time
-
-            if elapsed < self.min_interval:
-                wait_time = self.min_interval - elapsed
-                self.last_call_time = current_time + wait_time
-                return wait_time
-            else:
-                self.last_call_time = current_time
-                return 0
-
-    def wait_if_needed(self):
-        """如有需要，等待以符合速率限制."""
-        wait_time = self.acquire()
-        if wait_time > 0:
-            time.sleep(wait_time)
 
 
 def _get_local_extractor(llm, embeddings, language: str = None, token_callback=None):
@@ -94,10 +54,6 @@ def _extract_with_local_extractor(
 
 
 class DISK:
-    """
-    Domain Incremental conStruction of Knowledge Graphs (DISK).
-    """
-
     def __init__(
         self,
         llm,
@@ -142,7 +98,6 @@ class DISK:
         self.extractor = Extractor(
             llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback
         )
-        self.kg_manager = KGManager(kg=kg)
         self.merger = Merger()
         self.llm = llm
         self.embeddings = embeddings
