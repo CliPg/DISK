@@ -7,7 +7,7 @@ class Embeddings(OpenAIEmbeddings):
     def __init__(self, *, model: str, api_key: SecretStr, base_url: str):
         super().__init__(
             model=model,
-            api_key=api_key,
+            api_key=api_key or (lambda: ""),
             base_url=base_url,
             check_embedding_ctx_length=False,
         )
