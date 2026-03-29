@@ -7,7 +7,7 @@ from .distiller import Distiller
 try:
     from docling.datamodel.pipeline_options import PdfPipelineOptions
     from docling.document_converter import DocumentConverter
-    from docling_core.types.doc.document import PictureItem, TableItem, TextItem
+    from docling_core.types.doc.document import TableItem, TextItem
 
     HAS_DOCLING = True
 except ImportError:
@@ -33,27 +33,14 @@ if HAS_DOCLING:
             # Initialize the converter with specific options
             self.converter = DocumentConverter()
 
-        def distill(self) -> list[str]:
-            """
-            Unified interface to extract text blocks (paragraphs) from the document using Docling.
-
-            Returns:
-                list[str]: List of paragraphs extracted from the document.
-            """
-            return self.extract_text_blocks()
-
-        def extract_text_blocks(self, file_path: str | None = None) -> list[str]:
+        def extract_text_blocks(self) -> list[str]:
             """
             Extract text blocks (paragraphs, headers) from a document using Docling.
 
-            Args:
-                file_path (str, optional): Path to the document file. Defaults to self.file_path.
-
             Returns:
-                list: List of valid text paragraphs.
+                list[str]: List of valid text paragraphs.
             """
-            path = file_path or self.file_path
-            result = self.converter.convert(path)
+            result = self.converter.convert(self.file_path)
             raw_blocks = []
 
             # Docling identifies the semantic structure (Heading, Paragraph, etc.)
@@ -77,53 +64,26 @@ if HAS_DOCLING:
                     merged_paragraphs.append(current)
                 i += 1
 
-            # Log for verification
-            (self.log_dir / "docling_extracted_paragraphs.log").write_text(
-                "".join(merged_paragraphs), encoding="utf-8"
-            )
-
             return merged_paragraphs
 
-        def extract_images_and_ocr(self, file_path: str | None = None) -> list[dict]:
+        def extract_images_and_ocr(self) -> list[str]:
             """
             Extract images and their associated OCR text using Docling.
 
-            Args:
-                file_path (str, optional): Path to the document file. Defaults to self.file_path.
-
             Returns:
-                list[dict]: List of dicts with 'page', 'image', 'ocr_text'.
+                list[str]: List of OCR text strings.
             """
-            path = file_path or self.file_path
-            raise RuntimeError("no support OCR")
-            result = self.converter.convert(path)
-            results = []
+            # Current Docling implementation in this project doesn't focus on raw image extraction here
+            return []
 
-            for item, _ in result.document.iterate_items():
-                if isinstance(item, PictureItem):
-                    # Docling integrates OCR results directly into the item text if OCR is enabled
-                    results.append(
-                        {
-                            "page": item.prov[0].page_no if item.prov else "unknown",
-                            "image": None,  # Images are not kept in memory by default to save RAM
-                            "ocr_text": item.references if hasattr(item, "text") else "",
-                        }
-                    )
-
-            return results
-
-        def extract_tables(self, file_path: str | None = None) -> list:
+        def extract_tables(self) -> list[str]:
             """
             Extract tables from a document using Docling's advanced table-former.
 
-            Args:
-                file_path (str, optional): Path to the document file. Defaults to self.file_path.
-
             Returns:
-                list: List of pandas DataFrames.
+                list[str]: List of tables as Markdown strings.
             """
-            path = file_path or self.file_path
-            result = self.converter.convert(path)
+            result = self.converter.convert(self.file_path)
             tables = []
 
             for item, _ in result.document.iterate_items():
@@ -132,9 +92,9 @@ if HAS_DOCLING:
                         # Export the Docling table item to a pandas DataFrame
                         df = item.export_to_dataframe()
                         if not df.empty:
-                            tables.append(df)
-                    except Exception as e:
-                        print(f"Error exporting Docling table to DataFrame: {e}")
+                            tables.append(df.to_markdown(index=False))
+                    except Exception:
+                        pass
 
             return tables
 
@@ -182,16 +142,13 @@ else:
                 "Please install it with `pip install docling`."
             )
 
-        def distill(self) -> list[str]:
+        def extract_text_blocks(self) -> list[str]:
             return []
 
-        def extract_text_blocks(self, file_path: str | None = None) -> list[str]:
+        def extract_images_and_ocr(self) -> list[str]:
             return []
 
-        def extract_images_and_ocr(self, file_path: str | None = None) -> list[dict]:
-            return []
-
-        def extract_tables(self, file_path: str | None = None) -> list:
+        def extract_tables(self) -> list[str]:
             return []
 
         def is_valid_block(self, text: str) -> bool:

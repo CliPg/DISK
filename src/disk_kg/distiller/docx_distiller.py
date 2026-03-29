@@ -22,28 +22,15 @@ class DocxDistiller(Distiller):
         super().__init__(file_path)
         self.ocr_model = RapidOCR(use_angle_cls=True, lang="en")
 
-    def distill(self) -> list[str]:
-        """
-        Unified interface to extract text blocks (paragraphs) from the DOCX file.
-
-        Returns:
-            list[str]: List of paragraphs extracted from the document.
-        """
-        return self.extract_text_blocks()
-
-    def extract_text_blocks(self, file_path: str | None = None) -> list[str]:
+    def extract_text_blocks(self) -> list[str]:
         """
         Extract text blocks (paragraphs) from a .docx file using docx2txt.
         Blocks shorter than 10 characters are merged with the next block.
 
-        Args:
-            file_path (str, optional): Path to the .docx file. Defaults to self.file_path.
-
         Returns:
             list: List of paragraphs extracted from the document.
         """
-        path = file_path or self.file_path
-        full_text = docx2txt.process(path)
+        full_text = docx2txt.process(self.file_path)
         raw_blocks = []
 
         for line in full_text.split("\n"):
@@ -63,11 +50,6 @@ class DocxDistiller(Distiller):
                 merged_paragraphs.append(current)
             i += 1
 
-        # Save extracted paragraphs to log for verification
-        (self.log_dir / "docx_extracted_paragraphs.log").write_text(
-            "\n\n".join(merged_paragraphs), encoding="utf-8"
-        )
-
         return merged_paragraphs
 
     def is_valid_block(self, text: str) -> bool:
@@ -81,27 +63,22 @@ class DocxDistiller(Distiller):
             bool: True if the block is valid, False otherwise.
         """
         if not text:
-            print("Empty block found, skipping.")
             return False
 
         # must contain at least one alphabetic character (English or Chinese)
         if not re.search(r"[A-Za-z\u4e00-\u9fa5]", text):
-            print(f"Block does not contain alphabetic characters, skipping: {text}")
             return False
 
         # must contain more than two words
         if len(text.split()) <= 2 and len(list(jieba.cut(text))) <= 2:
-            print(f"Block does not contain more than two words, skipping: {text}")
             return False
 
         # exclude reference format
         if self._is_reference_format(text):
-            print(f"Block identified as reference format, skipping: {text}")
             return False
 
         # must be a complete sentence
         if not self._is_a_sentence(text):
-            print(f"Block does not appear to be a complete sentence, skipping: {text}")
             return False
 
         return True
@@ -115,8 +92,6 @@ class DocxDistiller(Distiller):
         reference_keywords = r"(Proceedings|Journal|Conference|pages|vol|ACM|IEEE|arXiv|Springer)"
 
         if re.search(pattern1, text) or re.search(pattern2, text):
-            with (self.log_dir / "docx_distill_references.log").open("a", encoding="utf-8") as f:
-                f.write(text + "\n\n")
             return True
 
         if re.search(reference_keywords, text, re.IGNORECASE) and re.search(
@@ -133,29 +108,19 @@ class DocxDistiller(Distiller):
         if re.search(r"[\.\?\!\。]", text.strip()):
             return True
 
-        with (self.log_dir / "docx_distill_incomplete_sentences.log").open(
-            "a", encoding="utf-8"
-        ) as f:
-            f.write(text + "\n\n")
-
         return False
 
-    def extract_images_and_ocr(self, file_path: str | None = None) -> list[dict]:
+    def extract_images_and_ocr(self) -> list[str]:
         """
         Extract images embedded in the .docx file and perform OCR on them.
-        A .docx file is a ZIP archive; images are stored under word/media/.
-
-        Args:
-            file_path (str, optional): Path to the .docx file. Defaults to self.file_path.
 
         Returns:
-            list[dict]: List of dicts with keys 'index', 'image', 'ocr_text'.
+            list[str]: List of OCR text strings from images.
         """
-        path = file_path or self.file_path
         results = []
         img_index = 0
 
-        with zipfile.ZipFile(path, "r") as z:
+        with zipfile.ZipFile(self.file_path, "r") as z:
             image_entries = [
                 name
                 for name in z.namelist()
@@ -198,24 +163,16 @@ class DocxDistiller(Distiller):
 
         return results
 
-    def extract_tables(self, file_path: str | None = None) -> list:
+    def extract_tables(self) -> list[str]:
         """
-        Extract tables from a .docx file by parsing the underlying XML.
-        No python-docx dependency required — reads directly from the ZIP archive.
-
-        Args:
-            file_path (str, optional): Path to the .docx file. Defaults to self.file_path.
-
-        Returns:
-            list: List of tables, each table is a list of rows (list of cell texts).
+        Extract tables from a .docx file and return as list of Markdown strings.
         """
-        path = file_path or self.file_path
         import xml.etree.ElementTree as ET
 
         ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
         tables = []
 
-        with zipfile.ZipFile(path, "r") as z:
+        with zipfile.ZipFile(self.file_path, "r") as z:
             if "word/document.xml" not in z.namelist():
                 return tables
             xml_content = z.read("word/document.xml")
@@ -238,17 +195,3 @@ class DocxDistiller(Distiller):
                 tables.append(table_data)
 
         return tables
-
-    def extract_full_text(self, file_path: str | None = None) -> str:
-        """
-        Extract the full plain text from a .docx file using docx2txt.
-        This is a convenience method for quick text extraction.
-
-        Args:
-            file_path (str, optional): Path to the .docx file. Defaults to self.file_path.
-
-        Returns:
-            str: Full text content of the document.
-        """
-        path = file_path or self.file_path
-        return docx2txt.process(path)

@@ -32,61 +32,48 @@ class Distiller(ABC):
     """
 
     def __init__(self, file_path: str):
-        # Set log directory to project root/logs
         self.file_path = file_path
-        self.log_dir = Path(__file__).resolve().parent.parent / "logs"
-        self.log_dir.mkdir(parents=True, exist_ok=True)
 
     @abstractmethod
-    def extract_text_blocks(self, file_path: str | None = None) -> list[str]:
+    def extract_text_blocks(self) -> list[str]:
         """
         Extract text blocks (paragraphs) from a document.
 
-        Args:
-            file_path (str, optional): Path to the document file. Defaults to self.file_path.
-
         Returns:
-            list: List of paragraphs extracted from the document.
+            list[str]: List of paragraphs extracted from the document.
         """
         raise NotImplementedError("Subclasses must implement extract_text_blocks()")
 
     @abstractmethod
-    def extract_images_and_ocr(self, file_path: str | None = None) -> list[dict]:
+    def extract_images_and_ocr(self) -> list[str]:
         """
         Extract images from a document and perform OCR on them.
 
-        Args:
-            file_path (str, optional): Path to the document file. Defaults to self.file_path.
-
         Returns:
-            list[dict]: List of dicts with keys like 'page', 'image', 'ocr_text'.
+            list[str]: List of OCR text strings from images.
         """
         raise NotImplementedError("Subclasses must implement extract_images_and_ocr()")
 
     @abstractmethod
-    def extract_tables(self, file_path: str | None = None) -> list:
+    def extract_tables(self) -> list[str]:
         """
         Extract tables from a document.
 
-        Args:
-            file_path (str, optional): Path to the document file. Defaults to self.file_path.
-
         Returns:
-            list: List of extracted tables (e.g. pandas DataFrames).
+            list[str]: List of extracted tables as strings (e.g., Markdown).
         """
         raise NotImplementedError("Subclasses must implement extract_tables()")
 
     @staticmethod
-    def distill(file_path: str) -> list[str]:
+    def distill(file_path: str) -> "Distiller":
         """
-        Automatically selects the appropriate distiller based on the file extension
-        and extracts text blocks.
+        Automatically selects the appropriate distiller based on the file extension.
 
         Args:
             file_path (str): Path to the document file.
 
         Returns:
-            list[str]: List of paragraphs extracted from the document.
+            Distiller: An instance of a specific Distiller subclass.
         """
         from .docling_distiller import HAS_DOCLING, DoclingDistiller
         from .docx_distiller import DocxDistiller
@@ -94,19 +81,15 @@ class Distiller(ABC):
 
         ext = Path(file_path).suffix.lower()
 
-        if ext == ".pdf" and HAS_DOCLING:
-            # For PDF, use PDFDistiller or DoclingDistiller
-            # Default to PDFDistiller for now as it's more specific in current implementation
-            distiller = DoclingDistiller(file_path)
-        elif ext == ".pdf":
-            distiller = PDFDistiller(file_path)
+        if ext == ".pdf":
+            if HAS_DOCLING:
+                return DoclingDistiller(file_path)
+            else:
+                return PDFDistiller(file_path)
         elif ext in [".docx", ".doc"]:
-            distiller = DocxDistiller(file_path)
+            return DocxDistiller(file_path)
         else:
-            # Fallback to DoclingDistiller for other supported formats
             raise ValueError(f"Unsupported file format: {ext}")
-
-        return distiller.distill()
 
     def is_valid_block(self, text: str) -> bool:
         """
