@@ -23,10 +23,6 @@ if not os.path.exists(CONFIG_PATH):
     # but tools will fail with informative messages.
     CONFIG_EXISTS = False
 else:
-    # If using custom path, update the config module's path
-    import disk_kg.provider.llm
-
-    disk_kg.provider.llm.CONFIG_PATH = CONFIG_PATH
     CONFIG_EXISTS = True
 
 # Initialize FastMCP
@@ -42,9 +38,11 @@ def get_disk():
         raise FileNotFoundError("config.toml not found. Please create it from config.example.toml.")
     if _disk_instance is None:
         from disk_kg import DISK
-        from disk_kg.provider.llm import embeddings, llm
+        from disk_kg.provider import ChatProxy, Embeddings, RateLimiter
 
-        _disk_instance = DISK(llm=llm, embeddings=embeddings)
+        models = RateLimiter(ChatProxy(CONFIG_PATH))
+        embeddings = Embeddings.build_from(CONFIG_PATH)
+        _disk_instance = DISK(llm=models, embeddings=embeddings)
     return _disk_instance
 
 

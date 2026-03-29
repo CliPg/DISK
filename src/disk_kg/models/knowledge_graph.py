@@ -1,4 +1,4 @@
-from disk_kg.models.distiller import TextBlock
+from disk_kg.distiller.distiller import TextBlock
 
 from .connector import Connector
 

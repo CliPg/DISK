@@ -47,7 +47,7 @@ class ChatProxy(Runnable):
         return self._instance.batch(inputs, config, **kwargs)
 
 
-class RateLimiter:
+class RateLimiter(Runnable):
     def __init__(self, cls: ChatProxy | ChatOpenAI, max_request_per_min: int = 60):
         self._cls = cls
         self.max_request_per_min = max_request_per_min
@@ -72,6 +72,26 @@ class RateLimiter:
             return wrapper
         else:
             return attr
+
+    # Runnable interface implementation
+    def invoke(self, input, config=None, **kwargs):
+        self._wait()
+        result = self._cls.invoke(input, config, **kwargs)
+        self.last_request_time = time()
+        return result
+
+    def stream(self, input, config=None, **kwargs):
+        self._wait()
+        yield from self._cls.stream(input, config, **kwargs)
+        self.last_request_time = time()
+
+    def batch(self, inputs, config=None, **kwargs):
+        # For batch, we could apply rate limit per item, but usually batch counts as one request or many.
+        # Here we just wait once before the whole batch for simplicity, or we could let the underlying implementation handle it.
+        self._wait()
+        result = self._cls.batch(inputs, config, **kwargs)
+        self.last_request_time = time()
+        return result
 
 
 ChatClient = RateLimiter | ChatProxy | ChatOpenAI

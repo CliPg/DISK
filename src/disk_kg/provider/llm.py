@@ -1,67 +1,51 @@
+import os
 from pathlib import Path
 
-import tomllib
-from langchain_core.runnables import Runnable
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from .chats import ChatProxy, RateLimiter
+from .embeddings import Embeddings
 
-# 路径设置与配置加载
-ROOT_DIR = Path(__file__).resolve().parent.parent
+# Legacy support for old imports
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_PATH = ROOT_DIR / "config.toml"
 
-if not CONFIG_PATH.exists():
-    raise FileNotFoundError(
-        f"Config file not found: {CONFIG_PATH}. Please create it from config.example.toml."
-    )
-
-with open(CONFIG_PATH, "rb") as f:
-    _CONFIG = tomllib.load(f)
+# These will be lazily initialized or updated by mcp.py
+_llm = None
+_embeddings = None
 
 
-def _get_params(provider: str) -> dict[str, str]:
-    """从配置中提取 OpenAI 兼容参数"""
-    cfg = _CONFIG.get("model", {}).get(provider, {})
-    return {
-        "model": cfg.get("model"),
-        "api_key": cfg.get("api_key", ""),
-        "base_url": cfg.get("api_url"),
-    }
+def _get_llm():
+    global _llm
+    if _llm is None:
+        if os.path.exists(CONFIG_PATH):
+            _llm = RateLimiter(ChatProxy(CONFIG_PATH))
+    return _llm
 
 
-class LLMProxy(Runnable):
-    """LLM 代理，允许运行时切换底层提供商"""
+def _get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        if os.path.exists(CONFIG_PATH):
+            _embeddings = Embeddings.build_from(CONFIG_PATH)
+    return _embeddings
 
-    def __init__(self, provider: str):
-        self.switch(provider)
 
-    def switch(self, provider: str):
-        params = _get_params(provider)
-        self._instance = ChatOpenAI(temperature=0, max_retries=3, **params)  # type: ignore
+# Proxy objects or properties could be used here,
+# but for simplicity we'll just provide the objects if config exists.
+# Note: mcp.py dynamically overwrites CONFIG_PATH, so we need to be careful.
 
+
+class LegacyLLM:
     def __getattr__(self, name):
-        return getattr(self._instance, name)
+        return getattr(_get_llm(), name)
 
-    # Runnable interface implementation
-    def invoke(self, input, config=None, **kwargs):
-        return self._instance.invoke(input, config, **kwargs)
-
-    def stream(self, input, config=None, **kwargs):
-        return self._instance.stream(input, config, **kwargs)
-
-    def batch(self, inputs, config=None, **kwargs):
-        return self._instance.batch(inputs, config, **kwargs)
+    def __call__(self, *args, **kwargs):
+        return _get_llm()(*args, **kwargs)
 
 
-# 初始化全局对象
-_disk = _CONFIG.get("disk", {})
-
-# LLM 代理初始化
-llm = LLMProxy(_disk.get("llm", "openai"))
+class LegacyEmbeddings:
+    def __getattr__(self, name):
+        return getattr(_get_embeddings(), name)
 
 
-_emb_cfg = _CONFIG.get("disk", {}).get("embeddings", {})
-
-embeddings = OpenAIEmbeddings(
-    model=_emb_cfg.get("model"),
-    api_key=_emb_cfg.get("api_key"),
-    base_url=_emb_cfg.get("api_url"),
-)
+llm = LegacyLLM()
+embeddings = LegacyEmbeddings()

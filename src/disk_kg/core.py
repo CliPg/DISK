@@ -11,6 +11,7 @@ from .extractor import EntitiesExtractor, Extractor, RelationsExtractor
 from .merger import Merger
 from .models import KnowledgeGraph
 from .models.neo4j_connector import Neo4jConnector
+from .provider import RateLimiter
 from .utils import (
     TokenTracker,
     TokenTrackingCallbackHandler,

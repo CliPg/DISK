@@ -57,7 +57,7 @@ class ChatProxy(Runnable):
         """Batch process multiple inputs using the active ChatOpenAI model."""
         ...
 
-class RateLimiter:
+class RateLimiter(Runnable):
     """A wrapper class that limits the request rate of a ChatProxy or ChatOpenAI instance.
 
     Ensures that requests do not exceed a specified number per minute.
@@ -83,6 +83,18 @@ class RateLimiter:
 
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to wrapping callables with rate limiting."""
+        ...
+
+    def invoke(self, input: Any, config: Any = ..., **kwargs: Any) -> Any:
+        """Invoke the active ChatOpenAI model with rate limiting."""
+        ...
+
+    def stream(self, input: Any, config: Any = ..., **kwargs: Any) -> Any:
+        """Stream the output from the active ChatOpenAI model with rate limiting."""
+        ...
+
+    def batch(self, inputs: list[Any], config: Any = ..., **kwargs: Any) -> list[Any]:
+        """Batch process multiple inputs using the active ChatOpenAI model with rate limiting."""
         ...
 
 ChatClient = RateLimiter | ChatProxy | ChatOpenAI

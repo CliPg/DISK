@@ -5,8 +5,7 @@ from tomllib import load as load_toml
 
 class Embeddings(OpenAIEmbeddings):
     def __init__(self, *, model: str, api_key: SecretStr, base_url: str):
-        OpenAIEmbeddings.__init__(
-            self,
+        super().__init__(
             model=model,
             api_key=api_key,
             base_url=base_url,
@@ -14,8 +13,8 @@ class Embeddings(OpenAIEmbeddings):
         )
 
     @staticmethod
-    def build_from(config: str):
-        with open(config, "rb") as fin:
+    def build_from(config_path: str):
+        with open(config_path, "rb") as fin:
             _config = load_toml(fin)
         _emb_cfg = _config.get("disk", {}).get("embeddings", {})
         return Embeddings(
