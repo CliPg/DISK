@@ -799,7 +799,7 @@ wheels = [
 
 [[package]]
 name = "disk-kg"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "docx2txt" },
@@ -822,6 +822,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "black" },
+    { name = "docling" },
     { name = "ipykernel" },
     { name = "jupyter" },
     { name = "mypy" },
@@ -830,14 +831,10 @@ dev = [
     { name = "ruff" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "docling" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
+    { name = "docling", marker = "extra == 'dev'", specifier = ">=2.80.0" },
     { name = "docx2txt", specifier = ">=0.9" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "jieba" },
@@ -861,9 +858,6 @@ requires-dist = [
     { name = "tqdm" },
 ]
 provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "docling", specifier = ">=2.80.0" }]
 
 [[package]]
 name = "distro"
