@@ -13,23 +13,33 @@ from .distiller import Distiller
 
 
 class PDFDistiller(Distiller):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, file_path: str):
+        super().__init__(file_path)
         self.ocr_model = RapidOCR(use_angle_cls=True, lang="en")
 
-    def extract_text_blocks(self, file_path: str) -> list:
+    def distill(self) -> list[str]:
+        """
+        Unified interface to extract text blocks (paragraphs) from the PDF.
+
+        Returns:
+            list[str]: List of paragraphs extracted from the PDF.
+        """
+        return self.extract_text_blocks()
+
+    def extract_text_blocks(self, file_path: str | None = None) -> list[str]:
         """
         extract blocks per page from pdf.
         one block usually corresponds to one paragraph.
         blocks shorter than 10 characters are merged with the next block.
 
         Args:
-            file_path (str): path to the pdf file
+            file_path (str, optional): path to the pdf file. Defaults to self.file_path.
 
         Returns:
             list: list of paragraphs extracted from the pdf
         """
-        doc = fitz.open(file_path)
+        path = file_path or self.file_path
+        doc = fitz.open(path)
         raw_blocks = []
 
         for page in doc:
@@ -150,8 +160,9 @@ class PDFDistiller(Distiller):
         return False
 
     # fixed by WuJunkai on 2026-02-23: optimize image extraction and OCR process
-    def extract_images_and_ocr(self, file_path: str) -> list[dict]:
-        doc = fitz.open(file_path)
+    def extract_images_and_ocr(self, file_path: str | None = None) -> list[dict]:
+        path = file_path or self.file_path
+        doc = fitz.open(path)
         results = []
 
         for page_index, page in enumerate(doc):  # type: ignore
@@ -195,10 +206,11 @@ class PDFDistiller(Distiller):
         return results
 
     # TODO: need to be improved
-    def extract_tables(self, file_path):
+    def extract_tables(self, file_path: str | None = None):
+        path = file_path or self.file_path
         tables = []
 
-        with pdfplumber.open(file_path) as pdf:
+        with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
                 page_tables = page.extract_tables()
                 for tb in page_tables:
@@ -217,7 +229,8 @@ class PDFDistiller(Distiller):
         return tables
 
     # TODO: need to be improved
-    def extract_tables_improved(self, file_path):
+    def extract_tables_improved(self, file_path: str | None = None):
+        path = file_path or self.file_path
         tables = []
 
         # 调整默认设置
@@ -232,7 +245,7 @@ class PDFDistiller(Distiller):
             # "edge_min_length": 5, # 只有在没有线条时才启用
         }
 
-        with pdfplumber.open(file_path) as pdf:
+        with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
                 # 使用调整后的设置
                 page_tables = page.extract_tables(table_settings=table_settings)
@@ -252,7 +265,8 @@ class PDFDistiller(Distiller):
         return tables
 
     # TODO: need to be improved
-    def extract_tables_horizontal_lines(self, file_path):
+    def extract_tables_horizontal_lines(self, file_path: str | None = None):
+        path = file_path or self.file_path
         tables = []
 
         # 核心设置：依赖横线 ('lines') 识别行，依赖文本间距 ('text') 识别列
@@ -266,7 +280,7 @@ class PDFDistiller(Distiller):
             # "text_y_tolerance": 3,
         }
 
-        with pdfplumber.open(file_path) as pdf:
+        with pdfplumber.open(path) as pdf:
             for page in pdf.pages:
                 page_tables = page.extract_tables(table_settings=table_settings)
 

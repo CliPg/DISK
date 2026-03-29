@@ -18,22 +18,32 @@ class DocxDistiller(Distiller):
     Supports OCR on embedded images via RapidOCR.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, file_path: str):
+        super().__init__(file_path)
         self.ocr_model = RapidOCR(use_angle_cls=True, lang="en")
 
-    def extract_text_blocks(self, file_path: str) -> list:
+    def distill(self) -> list[str]:
+        """
+        Unified interface to extract text blocks (paragraphs) from the DOCX file.
+
+        Returns:
+            list[str]: List of paragraphs extracted from the document.
+        """
+        return self.extract_text_blocks()
+
+    def extract_text_blocks(self, file_path: str | None = None) -> list[str]:
         """
         Extract text blocks (paragraphs) from a .docx file using docx2txt.
         Blocks shorter than 10 characters are merged with the next block.
 
         Args:
-            file_path (str): Path to the .docx file.
+            file_path (str, optional): Path to the .docx file. Defaults to self.file_path.
 
         Returns:
             list: List of paragraphs extracted from the document.
         """
-        full_text = docx2txt.process(file_path)
+        path = file_path or self.file_path
+        full_text = docx2txt.process(path)
         raw_blocks = []
 
         for line in full_text.split("\n"):
@@ -130,21 +140,22 @@ class DocxDistiller(Distiller):
 
         return False
 
-    def extract_images_and_ocr(self, file_path: str) -> list[dict]:
+    def extract_images_and_ocr(self, file_path: str | None = None) -> list[dict]:
         """
         Extract images embedded in the .docx file and perform OCR on them.
         A .docx file is a ZIP archive; images are stored under word/media/.
 
         Args:
-            file_path (str): Path to the .docx file.
+            file_path (str, optional): Path to the .docx file. Defaults to self.file_path.
 
         Returns:
             list[dict]: List of dicts with keys 'index', 'image', 'ocr_text'.
         """
+        path = file_path or self.file_path
         results = []
         img_index = 0
 
-        with zipfile.ZipFile(file_path, "r") as z:
+        with zipfile.ZipFile(path, "r") as z:
             image_entries = [
                 name
                 for name in z.namelist()
@@ -187,23 +198,24 @@ class DocxDistiller(Distiller):
 
         return results
 
-    def extract_tables(self, file_path: str) -> list:
+    def extract_tables(self, file_path: str | None = None) -> list:
         """
         Extract tables from a .docx file by parsing the underlying XML.
         No python-docx dependency required — reads directly from the ZIP archive.
 
         Args:
-            file_path (str): Path to the .docx file.
+            file_path (str, optional): Path to the .docx file. Defaults to self.file_path.
 
         Returns:
             list: List of tables, each table is a list of rows (list of cell texts).
         """
+        path = file_path or self.file_path
         import xml.etree.ElementTree as ET
 
         ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
         tables = []
 
-        with zipfile.ZipFile(file_path, "r") as z:
+        with zipfile.ZipFile(path, "r") as z:
             if "word/document.xml" not in z.namelist():
                 return tables
             xml_content = z.read("word/document.xml")
@@ -227,15 +239,16 @@ class DocxDistiller(Distiller):
 
         return tables
 
-    def extract_full_text(self, file_path: str) -> str:
+    def extract_full_text(self, file_path: str | None = None) -> str:
         """
         Extract the full plain text from a .docx file using docx2txt.
         This is a convenience method for quick text extraction.
 
         Args:
-            file_path (str): Path to the .docx file.
+            file_path (str, optional): Path to the .docx file. Defaults to self.file_path.
 
         Returns:
             str: Full text content of the document.
         """
-        return docx2txt.process(file_path)
+        path = file_path or self.file_path
+        return docx2txt.process(path)
