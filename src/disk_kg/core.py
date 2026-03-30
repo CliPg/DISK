@@ -8,8 +8,8 @@ from tqdm import tqdm
 
 from .distiller import PDFDistiller
 from .extractor import EntitiesExtractor, Extractor, RelationsExtractor
-from .merger import Merger
 from .models import KnowledgeGraph
+from .models.merger import Merger
 from .models.neo4j_connector import Neo4jConnector
 from .provider import RateLimiter
 from .utils import (
@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 # 线程本地存储，每个线程拥有独立的 Extractor 实例
 _thread_local = local()
-
 
 
 def _get_local_extractor(llm, embeddings, language: str = None, token_callback=None):

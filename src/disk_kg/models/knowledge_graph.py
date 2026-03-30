@@ -32,9 +32,8 @@ class Entity:
             "label": self.label,
             "name": self.name,
             "description": self.description,
+            "source_block": self.source_block.to_dict() if self.source_block else None,
         }
-        if self.source_block:
-            data["source_block"] = self.source_block.to_dict()
         return data
 
     def __eq__(self, other):
@@ -113,6 +112,14 @@ class KnowledgeGraph:
         self.entities: set[Entity] = set()
         self.relations: set[Relation] = set()
 
+    def add_entities(self, entities: list[Entity]):
+        """添加实体列表到图谱中"""
+        self.entities.update(entities)
+
+    def add_relations(self, relations: list[Relation]):
+        """添加关系列表到图谱中"""
+        self.relations.update(relations)
+
     def load_from(self, connector: Connector):
         """从存储器加载实体和关系"""
         self.entities = set(connector.get_all_entities())
@@ -126,7 +133,32 @@ class KnowledgeGraph:
     def __add__(self, other):
         if not isinstance(other, KnowledgeGraph):
             return NotImplemented
+        from .merger import Merger
+
+        merger = Merger()
+        new_relations, new_entities = merger.merge(
+            entities1=list(self.entities),
+            entities2=list(other.entities),
+            relations1=list(self.relations),
+            relations2=list(other.relations),
+        )
         combined = KnowledgeGraph()
-        combined.entities = self.entities.union(other.entities)
-        combined.relations = self.relations.union(other.relations)
+        combined.entities = set(new_entities)
+        combined.relations = set(new_relations)
         return combined
+
+    def __iadd__(self, other):
+        if not isinstance(other, KnowledgeGraph):
+            return NotImplemented
+        from .merger import Merger
+
+        merger = Merger()
+        new_relations, new_entities = merger.merge(
+            entities1=list(self.entities),
+            entities2=list(other.entities),
+            relations1=list(self.relations),
+            relations2=list(other.relations),
+        )
+        self.entities = set(new_entities)
+        self.relations = set(new_relations)
+        return self

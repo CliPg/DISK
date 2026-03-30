@@ -1,6 +1,8 @@
 import sqlite3
 from typing import Any
 
+import numpy as np
+
 from disk_kg.distiller import TextBlock
 
 from .connector import Connector
@@ -120,7 +122,7 @@ class SQLiteConnector(Connector):
                 "label": entity.label,
                 "graph_id": self.graph_id or "default",
                 "description": entity.description,
-                "embedding": sqlite3.Binary(entity.embedding)
+                "embedding": sqlite3.Binary(np.array(entity.embedding, dtype=np.float32).tobytes())
                 if entity.embedding is not None
                 else None,
                 "source_block_id": entity.source_block.block_id if entity.source_block else None,
@@ -151,7 +153,9 @@ class SQLiteConnector(Connector):
                 "name": rel.name,
                 "graph_id": self.graph_id or "default",
                 "description": rel.description,
-                "embedding": sqlite3.Binary(rel.embedding) if rel.embedding is not None else None,
+                "embedding": sqlite3.Binary(np.array(rel.embedding, dtype=np.float32).tobytes())
+                if rel.embedding is not None
+                else None,
                 "source_block_id": rel.source_block.block_id if rel.source_block else None,
                 "source_page": rel.source_block.page_number if rel.source_block else None,
             }
