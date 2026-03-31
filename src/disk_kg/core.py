@@ -6,7 +6,7 @@ from typing import Literal
 
 from tqdm import tqdm
 
-from .distiller import PDFDistiller
+from .distiller import Distiller, PDFDistiller
 from .extractor import EntitiesExtractor, Extractor, RelationsExtractor
 from .models import KnowledgeGraph
 from .models.merger import Merger
@@ -56,13 +56,10 @@ def _extract_with_local_extractor(
 class DISK:
     def __init__(
         self,
-        llm,
-        embeddings,
-        kg: KnowledgeGraph | None = None,
-        max_requests_per_second: float = 5,
-        language: str = None,
+        model,
+        embedding,
+        language: str = "",
         enable_token_tracking: bool = True,
-        model_name: str = None,
     ):
         """
         Args:
@@ -74,35 +71,25 @@ class DISK:
             enable_token_tracking: 是否启用token使用跟踪
             model_name: 模型名称，用于成本估算
         """
-
-        self.distiller = PDFDistiller()
         self.language = language
 
         # Token跟踪
         self.enable_token_tracking = enable_token_tracking
-        self.model_name = model_name or self._extract_model_name(llm)
-        self.token_tracker = (
-            TokenTracker(model_name=self.model_name) if enable_token_tracking else None
-        )
+        self.token_tracker = TokenTracker(model_name="model") if enable_token_tracking else None
         self.token_callback = (
             TokenTrackingCallbackHandler(self.token_tracker) if enable_token_tracking else None
         )
 
         # 使用原始LLM（不包装），通过回调跟踪token
         self.entities_extractor = EntitiesExtractor(
-            llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback
+            llm=model, embeddings=embedding, language=language, token_callback=self.token_callback
         )
         self.relations_extractor = RelationsExtractor(
-            llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback
+            llm=model, embeddings=embedding, language=language, token_callback=self.token_callback
         )
         self.extractor = Extractor(
-            llm=llm, embeddings=embeddings, language=language, token_callback=self.token_callback
+            llm=model, embeddings=embedding, language=language, token_callback=self.token_callback
         )
-        self.merger = Merger()
-        self.llm = llm
-        self.embeddings = embeddings
-        self.rate_limiter = RateLimiter(max_requests_per_second=max_requests_per_second)
-        self.current_pdf_path = None  # Store current pdf_path for language detection
 
     """
     def build_knowledge_graph(self, pdf_path: str) -> KnowledgeGraph:
@@ -149,7 +136,7 @@ class DISK:
 
     def build_knowledge_graph(
         self,
-        pdf_path: str,
+        file: Distiller,
         batch_size: int = 32,
         max_workers: int | None = None,
         mode: Literal["parallel", "serial"] = "parallel",
@@ -158,7 +145,7 @@ class DISK:
         构建知识图谱.
 
         Args:
-            pdf_path: PDF 文件路径
+            file: 文件包装器
             batch_size: 分批合并的批大小，默认 32
             max_workers: 最大并发线程数，None 时自动计算
             mode: 执行模式，"parallel" 为并行，"serial" 为串行
@@ -166,28 +153,21 @@ class DISK:
         Returns:
             KnowledgeGraph: 构建好的知识图谱
         """
-        # Store current pdf_path for language detection
-        self.current_pdf_path = pdf_path
-
-        if self.kg_manager.is_existing_kg:
-            all_entities = self.kg_manager.kg.entities
-            all_relations = self.kg_manager.kg.relations
-        else:
-            all_entities = []
-            all_relations = []
+        all_entities = []
+        all_relations = []
 
         # 动态计算并发数
         if max_workers is None:
             max_workers = min(32, (os.cpu_count() or 1) * 4)
 
         # Step 1: 提取文本块
-        texts = self.distiller.extract_text_blocks(pdf_path)
+        texts = file.extract_text_blocks()
         logger.info(f"Extracted {len(texts)} text blocks from PDF")
 
         # Auto-detect language if not set
         if self.language is None and texts:
             detected_lang = detect_document_language(
-                file_path=pdf_path, text_content=texts[0][:500] if texts else ""
+                file_path=file.file_path, text_content=texts[0][:500] if texts else ""
             )
             logger.info(f"Detected document language: {detected_lang}")
             # Update extractors with detected language
@@ -208,13 +188,14 @@ class DISK:
         )
 
         # Step 4: 构建知识图谱
-        self.kg_manager.add_entities(all_entities)
-        self.kg_manager.add_relations(all_relations)
+        kg = KnowledgeGraph()
+        kg.add_entities(all_entities)
+        kg.add_relations(all_relations)
 
         # 打印Token使用统计
         self.print_token_summary()
 
-        return self.kg_manager.kg
+        return kg
 
     def _extract_parallel(self, texts: list[str], max_workers: int) -> list:
         """并行提取实体和关系."""
@@ -425,15 +406,3 @@ class DISK:
         """保存Token使用记录"""
         if self.token_tracker:
             self.token_tracker.save()
-
-    def _extract_model_name(self, llm) -> str:
-        """从LLM对象中提取模型名称"""
-        # 尝试从不同LLM类型中提取模型名
-        if hasattr(llm, "model"):
-            return str(llm.model)
-        elif hasattr(llm, "model_name"):
-            return str(llm.model_name)
-        elif hasattr(llm, "_llm_type"):
-            return str(llm._llm_type)
-        else:
-            return "unknown"

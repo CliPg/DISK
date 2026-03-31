@@ -11,8 +11,8 @@ class DISK:
     """
     def __init__(
         self,
-        models: ChatClient,
-        embeddings: Embeddings,
+        model: ChatClient,
+        embedding: Embeddings,
         language: str = "",
         enable_token_track: bool = True,
     ): ...
