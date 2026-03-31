@@ -77,6 +77,7 @@ class Distiller(ABC):
         """
         from .docling_distiller import HAS_DOCLING, DoclingDistiller
         from .docx_distiller import DocxDistiller
+        from .markdown_distiller import MarkdownDistiller
         from .pdf_distiller import PDFDistiller
 
         ext = Path(file_path).suffix.lower()
@@ -88,6 +89,8 @@ class Distiller(ABC):
                 return PDFDistiller(file_path)
         elif ext in [".docx", ".doc"]:
             return DocxDistiller(file_path)
+        elif ext == ".md":
+            return MarkdownDistiller(file_path)
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
