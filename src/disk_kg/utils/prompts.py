@@ -3,10 +3,10 @@
 # --------------------#
 
 # Language detection
-from .lang_detect import detect_document_language
+# from .lang_detect import detect_document_language
 
 
-def get_prompts(language=None):
+def get_prompts(language: str | None = None):
     """
     Get prompts based on document language.
 

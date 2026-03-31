@@ -1,5 +1,9 @@
+from typing import Any
+
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableConfig
+from pydantic import BaseModel
 
 
 class Parser:
@@ -17,8 +21,8 @@ class Parser:
         self.token_callback = token_callback
 
     def extract_information_as_json_from_text(
-        self, text: str, output_structure, prompt: str
-    ) -> str:
+        self, text: str, output_structure: BaseModel, prompt: str
+    ) -> dict[str, Any]:
         """
         Extract structured information in JSON format from the given text using the provided prompt.
 
@@ -28,7 +32,7 @@ class Parser:
             prompt (str): The prompt guiding the extraction process.
 
         Returns:
-            str: The extracted information in JSON format.
+            Dict[str, Any]: The extracted information in JSON format.
         """
         parser = JsonOutputParser(pydantic_object=output_structure)
 
@@ -55,8 +59,6 @@ class Parser:
 
         # 如果有回调，通过config传递
         if self.token_callback:
-            from langchain_core.runnables import RunnableConfig
-
             config = RunnableConfig(callbacks=[self.token_callback])
             print(f"[DEBUG] Invoking chain with token_callback: {self.token_callback}")
             extracted_information = chain.invoke(invoke_args, config=config)

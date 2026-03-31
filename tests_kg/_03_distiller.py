@@ -16,8 +16,10 @@ def test_distiller_interface():
         print(f"Warning: {pdf_path} not found, skipping PDF test.")
     else:
         print(f"\n[1] Testing Distiller.distill('{pdf_path}')...")
-        # 测试静态方法自动识别和提取
-        blocks = Distiller.distill(pdf_path)
+        # 测试静态方法自动识别
+        distiller = Distiller.distill(pdf_path)
+        print(f"{type(distiller)=}")
+        blocks = distiller.extract_text_blocks()
         print(f"Success! Extracted {len(blocks)} blocks.")
         assert isinstance(blocks, list)
         if blocks:
@@ -27,8 +29,10 @@ def test_distiller_interface():
         print(f"Warning: {docx_path} not found, skipping DOCX test.")
     else:
         print(f"\n[2] Testing Distiller.distill('{docx_path}')...")
-        # 测试静态方法自动识别和提取
-        blocks = Distiller.distill(docx_path)
+        # 测试静态方法自动识别
+        distiller = Distiller.distill(docx_path)
+        print(f"{type(distiller)=}")
+        blocks = distiller.extract_text_blocks()
         print(f"Success! Extracted {len(blocks)} blocks.")
         assert isinstance(blocks, list)
         if blocks:
@@ -38,10 +42,11 @@ def test_distiller_interface():
     if os.path.exists(pdf_path):
         print("\n[3] Testing PDFDistiller instantiation...")
         pd = PDFDistiller(pdf_path)
-        blocks = pd.distill()
-        print(f"Success! pd.distill() extracted {len(blocks)} blocks.")
+        print(f"{type(pd)=}")
+        blocks = pd.extract_text_blocks()
+        print(f"Success! pd.extract_text_blocks() extracted {len(blocks)} blocks.")
 
-        # 测试不传参数调用
+        # 测试重复调用
         blocks_again = pd.extract_text_blocks()
         assert len(blocks) == len(blocks_again)
         print("Success! pd.extract_text_blocks() without arguments worked.")
