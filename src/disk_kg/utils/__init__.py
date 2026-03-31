@@ -7,7 +7,7 @@ from disk_kg.utils.prompts import (
     EXTRACT_RELATIONS_PROMPT,
     get_prompts,
 )
-from disk_kg.utils.schemas import EntitiesSchema, EntitySchema, RelationSchema, RelationsSchema
+from disk_kg.models import EntitiesSchema, EntitySchema, RelationSchema, RelationsSchema
 from disk_kg.utils.token_tracker import TokenTracker, TokenTrackingCallbackHandler, estimate_tokens
 
 __all__ = [

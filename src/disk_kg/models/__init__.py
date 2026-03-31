@@ -4,6 +4,11 @@ from .merger import Merger
 from .neo4j_connector import Neo4jConnector
 from .sqlite_connector import SQLiteConnector
 
+EntitySchema = Entity
+EntitiesSchema = list[EntitySchema]
+RelationSchema = Relation
+RelationsSchema = list[RelationSchema]
+
 __all__ = [
     "Connector",
     "Neo4jConnector",
@@ -12,4 +17,8 @@ __all__ = [
     "Relation",
     "KnowledgeGraph",
     "Merger",
+    "EntitySchema",
+    "EntitiesSchema",
+    "RelationSchema",
+    "RelationsSchema",
 ]

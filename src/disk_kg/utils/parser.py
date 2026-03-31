@@ -61,7 +61,7 @@ class Parser:
             print(f"[DEBUG] Invoking chain with token_callback: {self.token_callback}")
             extracted_information = chain.invoke(invoke_args, config=config)
         else:
-            print(f"[DEBUG] Invoking chain without token_callback")
+            print("[DEBUG] Invoking chain without token_callback")
             extracted_information = chain.invoke(invoke_args)
 
         return extracted_information

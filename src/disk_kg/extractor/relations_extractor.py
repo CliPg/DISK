@@ -1,11 +1,10 @@
 import json
 import os
 
-from disk_kg.models import Relation
+from disk_kg.models import RelationsSchema, Relation
 from disk_kg.utils.lang_detect import detect_document_language
 from disk_kg.utils.parser import Parser
 from disk_kg.utils.prompts import EXTRACT_RELATIONS_PROMPT, get_prompts
-from disk_kg.utils.schemas import RelationsSchema
 
 
 class RelationsExtractor:

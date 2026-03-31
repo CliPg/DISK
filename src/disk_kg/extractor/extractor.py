@@ -1,14 +1,18 @@
 import json
 import os
-from typing import List, Tuple
 
 import numpy as np
 
-from disk_kg.models import Entity, Relation
+from disk_kg.models import (
+    EntitiesSchema,
+    Entity,
+    EntitySchema,
+    Relation,
+    RelationsSchema,
+)
 from disk_kg.utils.lang_detect import detect_document_language
 from disk_kg.utils.parser import Parser
 from disk_kg.utils.prompts import EXTRACT_PROMPT, get_prompts
-from disk_kg.utils.schemas import EntitiesSchema, EntitySchema, RelationsSchema
 
 
 class Extractor:
@@ -48,7 +52,7 @@ class Extractor:
 
     def extract_relations_and_entities(
         self, text: str, pdf_path: str = None
-    ) -> Tuple[List[Relation], List[Entity]] | None:
+    ) -> tuple[list[Relation], list[Entity]] | None:
         """
         Extract relations from the given text.
 
@@ -66,14 +70,14 @@ class Extractor:
 
         try:
             print("Calling llm...")
-            relations = self.parser.extract_information_as_json_from_text(
+            relation_str = self.parser.extract_information_as_json_from_text(
                 text=text, output_structure=RelationsSchema, prompt=self.prompts["extract"]
             )
         except Exception as e:
             print(f"Error during relation extraction: {e}")
             return None
 
-        if not relations or "relations" not in relations or len(relations["relations"]) == 0:
+        if not relations or "relations" not in relations or len(relations) == 0:
             print("No relations found in the text.")
             return None
 
@@ -97,7 +101,7 @@ class Extractor:
 
         return embedded_relations, embedded_entities
 
-    def extract_entities(self, relations: RelationsSchema) -> list[Entity]:
+    def extract_entities(self, relations: RelationsSchema) -> EntitiesSchema:
         """
         Extract entities from the given relations.
 
@@ -109,17 +113,17 @@ class Extractor:
         """
         entities = []
 
-        for relation in relations["relations"]:
-            start_entity = relation["start_entity"]
-            end_entity = relation["end_entity"]
+        for relation in relations:
+            start_entity = relation.start_entity
+            end_entity = relation.end_entity
             if start_entity not in entities:
                 entities.append(start_entity)
             if end_entity not in entities:
                 entities.append(end_entity)
 
-        return {"entities": entities}
+        return entities
 
-    def embed_relations(self, relations: RelationsSchema) -> list[Relation]:
+    def embed_relations(self, relations: RelationsSchema) -> RelationsSchema:
         """
         Generate embeddings for the extracted relations.
 
@@ -131,24 +135,22 @@ class Extractor:
         """
         embedded_relations = []
 
-        for relation in relations["relations"]:
-            relation_name = relation.get("name")
-            relation_label = relation.get("label")
-            start_entity = relation.get("start_entity")
-            end_entity = relation.get("end_entity")
+        for relation in relations:
+            relation_name = relation.name
+            relation_label = relation.label
 
             if not self.is_valid_string(relation_name) or not self.is_valid_string(relation_label):
                 print("invalid relation name or label, skipping...")
                 continue
 
-            embedding = self.parser.embeddings.embed_query(relation["name"])
+            embedding = self.parser.embeddings.embed_query(relation.name)
             embedded_relation = Relation(
-                start_entity=self.embed_entity(relation["start_entity"]),
-                end_entity=self.embed_entity(relation["end_entity"]),
-                label=relation["label"],
-                name=relation["name"],
+                start_entity=self.embed_entity(relation.start_entity),
+                end_entity=self.embed_entity(relation.end_entity),
+                label=relation.label,
+                name=relation.name,
                 embedding=embedding,
-                description=relation.get("description", ""),
+                description=relation.description,
             )
             embedded_relations.append(embedded_relation)
 
@@ -167,9 +169,9 @@ class Extractor:
         """
         embedded_entities = []
 
-        for entity in entities["entities"]:
-            name = entity.get("name")
-            label = entity.get("label")
+        for entity in entities:
+            name = entity.name
+            label = entity.label
             if not self.is_valid_string(name) or not self.is_valid_string(label):
                 print("invalid entity name or label, skipping...")
                 continue

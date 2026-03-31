@@ -1,15 +1,14 @@
 import json
 import os
 
-from disk_kg.models import Entity, KnowledgeGraph, Relation
+from disk_kg.models import EntitiesSchema, Entity, KnowledgeGraph, Relation
 from disk_kg.utils.lang_detect import detect_document_language
 from disk_kg.utils.parser import Parser
 from disk_kg.utils.prompts import EXTRACT_ENTITIES_PROMPT, get_prompts
-from disk_kg.utils.schemas import EntitiesSchema
 
 
 class EntitiesExtractor:
-    def __init__(self, llm, embeddings, language: str = None, token_callback=None):
+    def __init__(self, llm, embeddings, language: str = "", token_callback=None):
         """
         Args:
             llm: Language model instance
@@ -78,7 +77,7 @@ class EntitiesExtractor:
         embedded_entities = []
 
         for entity in entities["entities"]:
-            if entity["name"] == None or entity["label"] == None:
+            if entity["name"] is None or entity["label"] is None:
                 continue
             embedding = self.parser.embeddings.embed_query(entity["name"])
             embedded_entity = Entity(
