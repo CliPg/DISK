@@ -6,12 +6,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from disk_kg.provider import ChatProxy, Embeddings, RateLimiter
 
+
 def test_llm_network():
     print("Testing LLM network connectivity with default provider...")
     config_path = "config.toml"
     # 使用 RateLimiter 包装 ChatProxy，模拟真实使用场景
     llm = RateLimiter(ChatProxy(config_path), max_request_per_min=60)
-    
+
     print(f"Using default LLM: {llm.model_name}")
     try:
         # 执行一个简单的 invoke 调用
@@ -24,11 +25,12 @@ def test_llm_network():
         print(f"✗ LLM network call failed: {e}")
         raise
 
+
 def test_embeddings_network():
     print("\nTesting Embeddings network connectivity with default provider...")
     config_path = "config.toml"
     embeddings = Embeddings.build_from(config_path)
-    
+
     print(f"Using default Embeddings model: {embeddings.model}")
     try:
         # 执行向量化请求
@@ -40,6 +42,7 @@ def test_embeddings_network():
     except Exception as e:
         print(f"✗ Embeddings network call failed: {e}")
         raise
+
 
 if __name__ == "__main__":
     try:
