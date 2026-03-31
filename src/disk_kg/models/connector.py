@@ -16,6 +16,12 @@ class Connector(ABC):
         """
         self.graph_id = graph_id
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     @abstractmethod
     def close(self):
         """Closes the connection to the storage."""

@@ -32,6 +32,12 @@ class Neo4jConnector(Connector):
             print(f"Neo4j 连接失败: {e}")
             raise
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def close(self):
         self.driver.close()
 
