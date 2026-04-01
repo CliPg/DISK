@@ -1,5 +1,6 @@
 # DISK
-Domain Incremental conStruction of Knowledge graph.
+
+Incremental conStruction of Domain Knowledge graph.
 
 ## Overview
 
@@ -166,40 +167,44 @@ sequenceDiagram
 ### Distillation Module (distiller/)
 
 - **pdf_distiller**
-    - extract **paragraphs** with intelligent validation
-    - extract **tables**(to be improved)
-    - extract **imgs**(to be improved)
-    - filter out low-quality text blocks (references, incomplete sentences)
+  - extract **paragraphs** with intelligent validation
+  - extract **tables**(to be improved)
+  - extract **imgs**(to be improved)
+  - filter out low-quality text blocks (references, incomplete sentences)
 
 ### Extraction Module (extractor/)
 
 - **entities_extractor**
-    - extract domain entities with labels and descriptions
-    - generate semantic embeddings for each entity
+  
+  - extract domain entities with labels and descriptions
+  - generate semantic embeddings for each entity
 
 - **relations_extractor**
-    - extract relationships between entities
-    - generate semantic embeddings for each relation
+  
+  - extract relationships between entities
+  - generate semantic embeddings for each relation
 
 - **extractor** (unified)
-    - extract both entities and relations in a single pass
-    - optimized for incremental processing
+  
+  - extract both entities and relations in a single pass
+  - optimized for incremental processing
 
 ### Processing Modules
 
 - **extract entities**
 - **extract relationships**
 - **semantic merging** (merger/)
-    - merge similar entities using cosine similarity
-    - update relations after entity merging
-    - configurable threshold (default: 0.8)
+  - merge similar entities using cosine similarity
+  - update relations after entity merging
+  - configurable threshold (default: 0.8)
 - **construct knowledge graph** (manager/)
-    - incremental knowledge graph construction
-    - deduplication of entities and relations
+  - incremental knowledge graph construction
+  - deduplication of entities and relations
 
 ## Config
 
 **env**
+
 ```bash
 # use uv to manage the environment
 uv venv
@@ -209,9 +214,10 @@ uv sync
 **LLM Configuration**
 
 1. Copy the example configuration file:
-```bash
-cp config.example.toml config.toml
-```
+   
+   ```bash
+   cp config.example.toml config.toml
+   ```
 
 2. Edit `config.toml` to set your API keys and preferences:
 
@@ -244,11 +250,12 @@ model = "gpt-4o"
 
 You can switch providers by changing the `llm` field in `[disk]` or using the runtime `switch()` function.
 
-
 ## Contrast
 
 ### merge
+
 - itext2kg
-```
-[INFO] Wohoo! Entity was matched --- [poor deep semantic understanding in traditional ie models:Limitation] --merged--> [cosine similarity ignores deep semantic differences:Limitation]
-```
+  
+  ```
+  [INFO] Wohoo! Entity was matched --- [poor deep semantic understanding in traditional ie models:Limitation] --merged--> [cosine similarity ignores deep semantic differences:Limitation]
+  ```

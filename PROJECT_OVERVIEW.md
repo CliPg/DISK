@@ -33,9 +33,6 @@
   - **作用**: 基于实体 embedding 的余弦相似度（PyTorch 实现）合并相近实体，并在合并后更新/合并关系集合。
   - **阈值**: 可配置 `threshold`（默认 0.8），日志会输出相似度矩阵与合并信息到 `logs/` 目录。
 
-- **`manager/kg_manager.py` (`KGManager`)**:
-  - **作用**: 管理 `KnowledgeGraph` 实例，提供 `add_entities` 与 `add_relations` 等增量写入接口（包含去重逻辑）。
-
 - **`models/knowledge_graph.py`**:
   - **核心类**: `Entity`（`label`, `name`, `embedding`）、`Relation`（`start_entity`, `end_entity`, `label`, `name`, `embedding`）、`KnowledgeGraph`（保存实体/关系列表）。
 
