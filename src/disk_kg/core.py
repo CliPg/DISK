@@ -6,18 +6,14 @@ from typing import Literal
 
 from tqdm import tqdm
 
-from .distiller import Distiller, PDFDistiller
+from .distiller import Distiller
 from .extractor import EntitiesExtractor, Extractor, RelationsExtractor
 from .models import KnowledgeGraph
 from .models.merger import Merger
 from .models.neo4j_connector import Neo4jConnector
-from .provider import RateLimiter
 from .utils import (
     TokenTracker,
     TokenTrackingCallbackHandler,
-    estimate_tokens,
-    load_checkpoint,
-    save_checkpoint,
 )
 from .utils.lang_detect import detect_document_language
 from .utils.prompts import get_prompts
@@ -41,14 +37,11 @@ def _extract_with_local_extractor(
     text,
     llm,
     embeddings,
-    rate_limiter: RateLimiter | None = None,
     pdf_path: str = None,
     language: str = None,
     token_callback=None,
 ):
     """在线程池中执行的提取函数."""
-    if rate_limiter is not None:
-        rate_limiter.wait_if_needed()
     extractor = _get_local_extractor(llm, embeddings, language, token_callback)
     return extractor.extract_relations_and_entities(text, pdf_path=pdf_path)
 
@@ -59,25 +52,24 @@ class DISK:
         model,
         embedding,
         language: str = "",
-        enable_token_tracking: bool = True,
+        enable_token_track: bool = True,
     ):
         """
         Args:
-            llm: Language model instance
-            embeddings: Embeddings instance
-            kg: Optional existing KnowledgeGraph
-            max_requests_per_second: Rate limit for API calls
+            model: Language model instance
+            embedding: Embeddings instance
             language: 'zh' for Chinese, 'en' for English, or None for auto-detection
             enable_token_tracking: 是否启用token使用跟踪
-            model_name: 模型名称，用于成本估算
         """
+        self.llm = model
+        self.embeddings = embedding
         self.language = language
 
         # Token跟踪
-        self.enable_token_tracking = enable_token_tracking
-        self.token_tracker = TokenTracker(model_name="model") if enable_token_tracking else None
+        self.enable_token_tracking = enable_token_track
+        self.token_tracker = TokenTracker(model_name="model") if enable_token_track else None
         self.token_callback = (
-            TokenTrackingCallbackHandler(self.token_tracker) if enable_token_tracking else None
+            TokenTrackingCallbackHandler(self.token_tracker) if enable_token_track else None
         )
 
         # 使用原始LLM（不包装），通过回调跟踪token
@@ -90,49 +82,7 @@ class DISK:
         self.extractor = Extractor(
             llm=model, embeddings=embedding, language=language, token_callback=self.token_callback
         )
-
-    """
-    def build_knowledge_graph(self, pdf_path: str) -> KnowledgeGraph:
-        all_entities = []
-        all_relations = []
-
-        ckpt = load_checkpoint()
-        start_entity_block = ckpt["entity_block_idx"]
-        start_relation_block = ckpt["relation_block_idx"]
-
-        # Step 1: Distill PDF to text
-        texts = self.distiller.extract_text_blocks(pdf_path)
-
-        # Step 2: Extract entities
-        print("Extracting entities...")
-        for i in tqdm(range(start_entity_block, len(texts))):
-            text = texts[i]
-            entities = self.entities_extractor.extract_entities(text)
-            if entities is None:
-                continue
-            for entity in entities:
-                all_entities.append(entity)
-
-            save_checkpoint(pdf_idx=0, entity_block_idx=i + 1, relation_block_idx=0)
-
-        # Step 3: Extract relations
-        print("Extracting relations...")
-        for i in tqdm(range(start_relation_block, len(texts))):
-            text = texts[i]
-            relations = self.relations_extractor.extract_relations(text)
-            if relations is None:
-                continue
-            for relation in relations:
-                all_relations.append(relation)
-
-            save_checkpoint(pdf_idx=0, entity_block_idx=len(texts), relation_block_idx=i + 1)
-
-        # Step 4: Build Knowledge Graph
-        self.kg_manager.add_entities(all_entities)
-        self.kg_manager.add_relations(all_relations)
-
-        return self.kg_manager.kg
-    """
+        self.merger = Merger()
 
     def build_knowledge_graph(
         self,
@@ -155,6 +105,7 @@ class DISK:
         """
         all_entities = []
         all_relations = []
+        self.current_pdf_path = file.file_path
 
         # 动态计算并发数
         if max_workers is None:
@@ -162,6 +113,7 @@ class DISK:
 
         # Step 1: 提取文本块
         texts = file.extract_text_blocks()
+        print(f"Extracted {len(texts)} text blocks from PDF")
         logger.info(f"Extracted {len(texts)} text blocks from PDF")
 
         # Auto-detect language if not set
@@ -203,14 +155,13 @@ class DISK:
         failed_count = 0
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # 提交所有任务，传入 rate_limiter, pdf_path, language 和 token_callback
+            # 提交所有任务，传入 pdf_path, language 和 token_callback
             futures = {
                 executor.submit(
                     _extract_with_local_extractor,
                     text,
                     self.llm,
                     self.embeddings,
-                    self.rate_limiter,
                     self.current_pdf_path,
                     self.language,
                     self.token_callback,

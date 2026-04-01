@@ -4,9 +4,7 @@ import os
 import numpy as np
 
 from disk_kg.models import (
-    EntitiesSchema,
     Entity,
-    EntitySchema,
     Relation,
     RelationsSchema,
 )
@@ -23,7 +21,7 @@ class Extractor:
         entity_label_weight: float = 0.0,
         entity_name_weight: float = 0.3,
         entity_description_weight: float = 0.7,
-        language: str = None,
+        language: str | None = None,
         token_callback=None,
     ):
         """
@@ -70,108 +68,113 @@ class Extractor:
 
         try:
             print("Calling llm...")
-            relation_str = self.parser.extract_information_as_json_from_text(
+            relations_data = self.parser.extract_information_as_json_from_text(
                 text=text, output_structure=RelationsSchema, prompt=self.prompts["extract"]
             )
         except Exception as e:
             print(f"Error during relation extraction: {e}")
             return None
 
-        if not relations or "relations" not in relations or len(relations) == 0:
+        if (
+            not relations_data
+            or "relations" not in relations_data
+            or len(relations_data["relations"]) == 0
+        ):
             print("No relations found in the text.")
             return None
 
-        entities = self.extract_entities(relations)
+        entities_data = self.extract_entities(relations_data)
 
         print("Embedding relations and entities...")
-        embedded_relations = self.embed_relations(relations)
-        embedded_entities = self.embed_entities(entities)
+        embedded_relations = self.embed_relations(relations_data)
+        embedded_entities = self.embed_entities(entities_data)
 
         with open(
             os.path.join(self.results_dir, "extracted_relations.json"), "a", encoding="utf-8"
         ) as f:
-            json.dump(relations, f, ensure_ascii=False)
+            json.dump(relations_data, f, ensure_ascii=False)
             f.write("\n")
 
         with open(
             os.path.join(self.results_dir, "extracted_entities.json"), "a", encoding="utf-8"
         ) as f:
-            json.dump(entities, f, ensure_ascii=False)
+            json.dump(entities_data, f, ensure_ascii=False)
             f.write("\n")
 
         return embedded_relations, embedded_entities
 
-    def extract_entities(self, relations: RelationsSchema) -> EntitiesSchema:
+    def extract_entities(self, relations_data: dict) -> list[dict]:
         """
         Extract entities from the given relations.
 
         Args:
-            relations (Relations): The extracted relations.
+            relations_data (dict): The extracted relations in dict format.
 
         Returns:
-            Entities: The extracted entities structured as per the Entities schema.
+            list[dict]: The extracted entities structured as per the Entities schema.
         """
         entities = []
+        seen_entities = set()
 
-        for relation in relations:
-            start_entity = relation.start_entity
-            end_entity = relation.end_entity
-            if start_entity not in entities:
-                entities.append(start_entity)
-            if end_entity not in entities:
-                entities.append(end_entity)
+        for relation in relations_data["relations"]:
+            for entity_key in ["start_entity", "end_entity"]:
+                entity = relation[entity_key]
+                entity_id = (entity["name"], entity["label"])
+                if entity_id not in seen_entities:
+                    entities.append(entity)
+                    seen_entities.add(entity_id)
 
         return entities
 
-    def embed_relations(self, relations: RelationsSchema) -> RelationsSchema:
+    def embed_relations(self, relations_data: dict) -> list[Relation]:
         """
         Generate embeddings for the extracted relations.
 
         Args:
-            relations (Relations): The extracted relations.
+            relations_data (dict): The extracted relations.
 
         Returns:
-            Relations: The relations with their embeddings.
+            list[Relation]: The relations with their embeddings.
         """
         embedded_relations = []
 
-        for relation in relations:
-            relation_name = relation.name
-            relation_label = relation.label
+        for relation in relations_data["relations"]:
+            relation_name = relation["name"]
+            relation_label = relation["label"]
 
             if not self.is_valid_string(relation_name) or not self.is_valid_string(relation_label):
                 print("invalid relation name or label, skipping...")
                 continue
 
-            embedding = self.parser.embeddings.embed_query(relation.name)
+            embedding = self.parser.embeddings.embed_query(relation_name)
             embedded_relation = Relation(
-                start_entity=self.embed_entity(relation.start_entity),
-                end_entity=self.embed_entity(relation.end_entity),
-                label=relation.label,
-                name=relation.name,
+                start_entity=self.embed_entity(relation["start_entity"]),
+                end_entity=self.embed_entity(relation["end_entity"]),
+                label=relation_label,
+                name=relation_name,
                 embedding=embedding,
-                description=relation.description,
+                description=relation.get("description", ""),
             )
             embedded_relations.append(embedded_relation)
 
         return embedded_relations
 
-    def embed_entities(self, entities: EntitiesSchema) -> list[Entity]:
+    def embed_entities(self, entities_data: list[dict]) -> list[Entity]:
         """
         Generate embeddings for the extracted entities.
 
         Args:
-            entities (Entities): The extracted entities.
+            entities_data (list[dict]): The extracted entities.
 
         Returns:
-            Entities: The entities with their embeddings.
+            list[Entity]: The entities with their embeddings.
 
         """
         embedded_entities = []
 
-        for entity in entities:
-            name = entity.name
-            label = entity.label
+        for entity in entities_data:
+            name = entity["name"]
+            label = entity["label"]
             if not self.is_valid_string(name) or not self.is_valid_string(label):
                 print("invalid entity name or label, skipping...")
                 continue
@@ -181,26 +184,28 @@ class Extractor:
 
         return embedded_entities
 
-    def embed_entity(self, entity: EntitySchema) -> Entity:
+    def embed_entity(self, entity_data: dict) -> Entity:
         """
         Generate embedding for a single entity.
 
         Args:
-            entity (Entity): The entity to be embedded.
+            entity_data (dict): The entity data to be embedded.
 
         Returns:
             Entity: The entity with its embedding.
         """
-        name = entity.get("name")
-        label = entity.get("label")
+        name = entity_data["name"]
+        label = entity_data["label"]
 
-        key = (entity["name"], entity["label"])
+        key = (name, label)
         if key in self.entity_cache:
             return self.entity_cache[key]
 
-        name_embedding = self.parser.embeddings.embed_query(entity["name"])
-        label_embedding = self.parser.embeddings.embed_query(entity["label"])
-        description_embedding = self.parser.embeddings.embed_query(entity.get("description", ""))
+        name_embedding = self.parser.embeddings.embed_query(name)
+        label_embedding = self.parser.embeddings.embed_query(label)
+        description_embedding = self.parser.embeddings.embed_query(
+            entity_data.get("description", "")
+        )
 
         embedding = (
             self.entity_name_weight * np.array(name_embedding)
@@ -210,10 +215,10 @@ class Extractor:
         embedding = embedding.tolist()
 
         embedded_entity = Entity(
-            label=entity["label"],
-            name=entity["name"],
+            label=label,
+            name=name,
             embedding=embedding,
-            description=entity.get("description", ""),
+            description=entity_data.get("description", ""),
         )
 
         self.entity_cache[key] = embedded_entity
