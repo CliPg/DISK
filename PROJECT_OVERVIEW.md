@@ -44,7 +44,6 @@
   - **作用**: 封装基于 LangChain 风格的 `JsonOutputParser` 与 `PromptTemplate`，将 LLM 的输出解析为 Pydantic 结构化对象。
 
 - **其他工具**:
-  - `utils/checkpoint_helper.py`: 用于保存与加载处理状态（代码中 `load_checkpoint` / `save_checkpoint` 被 `disk.py` 用于断点恢复）。
   - `utils/prompts.py`、`utils/schemas.py`: 定义 prompt 模板与 pydantic 输出 schema，用于约束 LLM 输出格式。
 
 **运行与安装**
