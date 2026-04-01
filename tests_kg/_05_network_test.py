@@ -35,7 +35,7 @@ def test_embeddings_network():
     try:
         # 执行向量化请求
         query = "Hello world"
-        vector = embeddings.embed_query(query)
+        vector = embeddings.embed_query("test")
         print(f"Embeddings vector dimension: {len(vector)}")
         assert len(vector) > 0
         print("✓ Embeddings network call successful.")
