@@ -90,6 +90,7 @@ class DISK:
         batch_size: int = 32,
         max_workers: int | None = None,
         mode: Literal["parallel", "serial"] = "parallel",
+        segs: slice | None = None,
     ) -> KnowledgeGraph:
         """
         构建知识图谱.
@@ -113,6 +114,8 @@ class DISK:
 
         # Step 1: 提取文本块
         texts = file.extract_text_blocks()
+        if segs:
+            texts = texts[segs]
         print(f"Extracted {len(texts)} text blocks from PDF")
         logger.info(f"Extracted {len(texts)} text blocks from PDF")
 

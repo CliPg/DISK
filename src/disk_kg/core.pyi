@@ -31,4 +31,5 @@ class DISK:
         batch_size: int = 32,
         max_workers: int | None = None,
         mode: Literal["parallel", "serial"] = "parallel",
+        segs: slice | None = None,
     ) -> KnowledgeGraph: ...
