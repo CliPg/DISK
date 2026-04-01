@@ -61,3 +61,26 @@ class Connector(ABC):
         Runs a native query against the storage.
         """
         pass
+
+    @abstractmethod
+    def clear(self, confirm: str | None = None) -> None:
+        """
+        Clears all data from the storage.
+        """
+        pass
+
+    def _confirm_clear(self, confirm: str | None = None) -> bool:
+        """
+        Standard confirmation logic for clearing data.
+        Returns True if the operation should proceed, False otherwise.
+        """
+        graph_id = self.graph_id or "default"
+        if confirm == "yes":
+            return True
+
+        user_input = input(f"确定要清除图 '{graph_id}' 的所有数据吗？此操作不可恢复！(y/n): ")
+        if user_input.lower() == "y":
+            return True
+
+        print("操作已取消。")
+        return False

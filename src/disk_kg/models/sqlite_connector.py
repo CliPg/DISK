@@ -204,3 +204,21 @@ class SQLiteConnector(Connector):
                 )
             )
         return relations
+
+    def clear(self, confirm: str | None = None) -> None:
+        """
+        Clears all data from the SQLite database for the current graph_id.
+        """
+        if not self._confirm_clear(confirm):
+            return
+
+        graph_id = self.graph_id or "default"
+        queries = [
+            "DELETE FROM entities WHERE graph_id = :graph_id",
+            "DELETE FROM relations WHERE graph_id = :graph_id",
+            "DELETE FROM text_blocks WHERE graph_id = :graph_id",
+        ]
+        for query in queries:
+            self.run_query(query, {"graph_id": graph_id})
+
+        print(f"图 '{graph_id}' 的数据已清除。")

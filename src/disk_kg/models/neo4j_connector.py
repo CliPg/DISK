@@ -202,3 +202,15 @@ class Neo4jConnector(Connector):
                 )
             )
         return relations
+
+    def clear(self, confirm: str | None = None) -> None:
+        """
+        Clears all data from the Neo4j database for the current graph_id.
+        """
+        if not self._confirm_clear(confirm):
+            return
+
+        graph_id = self.graph_id or "default"
+        query = "MATCH (n) WHERE n.graph_id = $graph_id DETACH DELETE n"
+        self.run_query(query, {"graph_id": graph_id})
+        print(f"图 '{graph_id}' 的数据已清除。")
