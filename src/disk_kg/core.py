@@ -10,7 +10,6 @@ from .distiller import Distiller
 from .extractor import EntitiesExtractor, Extractor, RelationsExtractor
 from .models import KnowledgeGraph
 from .models.merger import Merger
-from .models.neo4j_connector import Neo4jConnector
 from .utils import (
     TokenTracker,
     TokenTrackingCallbackHandler,
@@ -114,6 +113,7 @@ class DISK:
 
         # Step 1: 提取文本块
         texts = file.extract_text_blocks()
+        print(f"Total text blocks extracted: {len(texts)}")
         if segs:
             texts = texts[segs]
         print(f"Extracted {len(texts)} text blocks from PDF")
@@ -324,20 +324,6 @@ class DISK:
             logger.error(f"Error in round {round_num}, pair {pair_idx}: {e}")
             # 失败时返回第一个块
             return (relations1, entities1, pair_idx)
-
-    def visualize_knowledge_graph(
-        self, uri, user, password, entities: list | None = None, relations: list | None = None
-    ):
-        connector = Neo4jConnector(uri=uri, user=user, password=password)
-        if entities is not None:
-            connector.create_entities(entities)
-        else:
-            connector.create_entities(self.kg_manager.kg.entities)
-        if relations is not None:
-            connector.create_relations(relations)
-        else:
-            connector.create_relations(self.kg_manager.kg.relations)
-        connector.close()
 
     # --------------------#
     # Token tracking methods #

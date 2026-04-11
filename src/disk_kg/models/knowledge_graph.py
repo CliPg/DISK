@@ -4,6 +4,8 @@ from .connector import Connector
 
 
 class Entity:
+    __slots__ = ("label", "name", "embedding", "description", "source_block")
+
     def __init__(
         self,
         label: str,
@@ -49,6 +51,16 @@ class Entity:
 
 
 class Relation:
+    __slots__ = (
+        "start_entity",
+        "end_entity",
+        "label",
+        "name",
+        "embedding",
+        "description",
+        "source_block",
+    )
+
     def __init__(
         self,
         start_entity: Entity,
