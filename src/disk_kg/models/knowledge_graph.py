@@ -142,6 +142,20 @@ class KnowledgeGraph:
         connector.upsert_entities(list(self.entities))
         connector.upsert_relations(list(self.relations))
 
+    def compact(self, threshold: float = 0.8):
+        """
+        压缩图谱，合并相似实体。
+        """
+        if not self.entities:
+            return
+
+        from .merger import Merger
+
+        merger = Merger(threshold=threshold)
+        new_relations, new_entities = merger.compact(list(self.entities), list(self.relations))
+        self.entities = set(new_entities)
+        self.relations = set(new_relations)
+
     def __add__(self, other):
         if not isinstance(other, KnowledgeGraph):
             return NotImplemented

@@ -152,7 +152,7 @@ class Neo4jConnector(Connector):
         Retrieves all entities from Neo4j (for the current graph_id).
         """
         graph_id = self.graph_id or "default"
-        query = "MATCH (n) WHERE n.graph_id = $graph_id AND NOT n:TextBlock RETURN n, labels(n) as labels"
+        query = "MATCH (n) WHERE n.graph_id = $graph_id AND NOT n:TextBlock RETURN properties(n) as n, labels(n) as labels"
         results = self.run_query(query, {"graph_id": graph_id})
 
         entities = []
@@ -178,7 +178,7 @@ class Neo4jConnector(Connector):
         query = """
         MATCH (a)-[r]->(b)
         WHERE r.graph_id = $graph_id AND NOT a:TextBlock AND NOT b:TextBlock
-        RETURN a, labels(a) as a_labels, b, labels(b) as b_labels, r, type(r) as r_type
+        RETURN properties(a) as a, labels(a) as a_labels, properties(b) as b, labels(b) as b_labels, properties(r) as r, type(r) as r_type
         """
         results = self.run_query(query, {"graph_id": graph_id})
 
